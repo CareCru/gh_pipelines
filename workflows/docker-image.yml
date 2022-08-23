@@ -1,0 +1,208 @@
+# This is a basic workflow to help you get started with Actions
+name: Build & Push to ECR
+
+# Controls when the action will run. 
+on:
+  pull_request:
+    types: [opened, reopened]
+  push:
+    branches:
+      - main
+      - release
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build-dev:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        name: Configure AWS Credentials
+        with: 
+          aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+          aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+          aws-region: ca-central-1
+          
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # ECR Login, depends on AWS Creds
+      - uses: aws-actions/amazon-ecr-login@v1
+        name: AWS ECR Login
+        id: login-ecr
+
+      # Fetch JSON object from AWS Secret manager, converting all KEY/VALUE pairs in 
+      # to variables with the name BUILD_DEV_WAITLIST_${KEY} 
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        uses: abhilash1in/aws-secrets-manager-action@v2.1.0
+        with:
+          secrets: build/dev/waitlist
+          parse-json: true
+
+      - name: Add SHORT_SHA env property with commit short sha
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: waitlist
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:DEV_$SHORT_SHA . \
+          --build-arg NODE_ENV=$BUILD_DEV_WAITLIST_NODE_ENV \
+          --build-arg PORT=$BUILD_DEV_WAITLIST_PORT \
+          --build-arg NPM_TOKEN=$BUILD_DEV_WAITLIST_NPM_TOKEN \
+          --build-arg FORT_AWESOME_NPM_TOKEN=$BUILD_DEV_WAITLIST_FORT_AWESOME_NPM_TOKEN \
+          --build-arg REACT_APP_API_SERVER=$BUILD_DEV_WAITLIST_REACT_APP_API_SERVER \
+          --build-arg REACT_APP_CCP_FRONTEND_HOST=$BUILD_DEV_WAITLIST_REACT_APP_CCP_FRONTEND_HOST
+          echo "docker push $ECR_REGISTRY/$ECR_REPOSITORY:DEV_$SHORT_SHA"
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:DEV_$SHORT_SHA
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:DEV_$SHORT_SHA"
+
+  # build-test  :
+  #   # The type of runner that the job will run on
+  #   runs-on: self-hosted
+  #   # Steps represent a sequence of tasks that will be executed as part of the job
+  #   steps:
+  #     - uses: aws-actions/configure-aws-credentials@v1
+  #       name: Configure AWS Credentials
+  #       with: 
+  #         aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+  #         aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+  #         aws-region: ca-central-1
+          
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+  #     - uses: actions/checkout@v2
+
+  #     # ECR Login, depends on AWS Creds
+  #     - uses: aws-actions/amazon-ecr-login@v1
+  #       name: AWS ECR Login
+  #       id: login-ecr
+
+  #     # Fetch JSON object from AWS Secret manager, converting all KEY/VALUE pairs in 
+  #     # to variables with the name BUILD_DEV_WAITLIST_${KEY} 
+  #     - name: Read secrets from AWS Secrets Manager into environment variables
+  #       uses: abhilash1in/aws-secrets-manager-action@v2.1.0
+  #       with:
+  #         secrets: build/test/waitlist
+  #         parse-json: true
+
+  #     - name: Add SHORT_SHA env property with commit short sha
+  #       run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+  #     - name: Build, tag, and push image to Amazon ECR
+  #       id: build-image
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         ECR_REPOSITORY: waitlist
+  #       run: |
+  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:TEST_$SHORT_SHA . \
+  #         --build-arg NODE_ENV=$BUILD_TEST_WAITLIST_NODE_ENV \
+  #         --build-arg PORT=$BUILD_TEST_WAITLIST_PORT \
+  #         --build-arg NPM_TOKEN=$BUILD_TEST_WAITLIST_NPM_TOKEN \
+  #         --build-arg FORT_AWESOME_NPM_TOKEN=$BUILD_TEST_WAITLIST_FORT_AWESOME_NPM_TOKEN \
+  #         --build-arg REACT_APP_API_SERVER=$BUILD_TEST_WAITLIST_REACT_APP_API_SERVER \
+  #         --build-arg REACT_APP_CCP_FRONTEND_HOST=$BUILD_TEST_WAITLIST_REACT_APP_CCP_FRONTEND_HOST
+  #         echo "docker push $ECR_REGISTRY/$ECR_REPOSITORY:TEST_$SHORT_SHA"
+  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:TEST_$SHORT_SHA
+  #         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:TEST_$SHORT_SHA"
+
+  # build-demo  :
+  #   # The type of runner that the job will run on
+  #   runs-on: self-hosted
+  #   # Steps represent a sequence of tasks that will be executed as part of the job
+  #   steps:
+  #     - uses: aws-actions/configure-aws-credentials@v1
+  #       name: Configure AWS Credentials
+  #       with: 
+  #         aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+  #         aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+  #         aws-region: ca-central-1
+          
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+  #     - uses: actions/checkout@v2
+
+  #     # ECR Login, depends on AWS Creds
+  #     - uses: aws-actions/amazon-ecr-login@v1
+  #       name: AWS ECR Login
+  #       id: login-ecr
+
+  #     # Fetch JSON object from AWS Secret manager, converting all KEY/VALUE pairs in 
+  #     # to variables with the name BUILD_DEV_WAITLIST_${KEY} 
+  #     - name: Read secrets from AWS Secrets Manager into environment variables
+  #       uses: abhilash1in/aws-secrets-manager-action@v2.1.0
+  #       with:
+  #         secrets: build/demo/waitlist
+  #         parse-json: true
+
+  #     - name: Add SHORT_SHA env property with commit short sha
+  #       run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+  #     - name: Build, tag, and push image to Amazon ECR
+  #       id: build-image
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         ECR_REPOSITORY: waitlist
+  #       run: |
+  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:DEMO_$SHORT_SHA . \
+  #         --build-arg NODE_ENV=$BUILD_DEMO_WAITLIST_NODE_ENV \
+  #         --build-arg PORT=$BUILD_DEMO_WAITLIST_PORT \
+  #         --build-arg NPM_TOKEN=$BUILD_DEMO_WAITLIST_NPM_TOKEN \
+  #         --build-arg FORT_AWESOME_NPM_TOKEN=$BUILD_DEMO_WAITLIST_FORT_AWESOME_NPM_TOKEN \
+  #         --build-arg REACT_APP_API_SERVER=$BUILD_DEMO_WAITLIST_REACT_APP_API_SERVER \
+  #         --build-arg REACT_APP_CCP_FRONTEND_HOST=$BUILD_DEMO_WAITLIST_REACT_APP_CCP_FRONTEND_HOST
+  #         echo "docker push $ECR_REGISTRY/$ECR_REPOSITORY:DEMO_$SHORT_SHA"
+  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:DEMO_$SHORT_SHA
+  #         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:DEMO_$SHORT_SHA"
+
+  # build-prod  :
+  #   # The type of runner that the job will run on
+  #   runs-on: self-hosted
+  #   # Steps represent a sequence of tasks that will be executed as part of the job
+  #   steps:
+  #     - uses: aws-actions/configure-aws-credentials@v1
+  #       name: Configure AWS Credentials
+  #       with: 
+  #         aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+  #         aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+  #         aws-region: ca-central-1
+          
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+  #     - uses: actions/checkout@v2
+
+  #     # ECR Login, depends on AWS Creds
+  #     - uses: aws-actions/amazon-ecr-login@v1
+  #       name: AWS ECR Login
+  #       id: login-ecr
+
+  #     # Fetch JSON object from AWS Secret manager, converting all KEY/VALUE pairs in 
+  #     # to variables with the name BUILD_DEV_WAITLIST_${KEY} 
+  #     - name: Read secrets from AWS Secrets Manager into environment variables
+  #       uses: abhilash1in/aws-secrets-manager-action@v2.1.0
+  #       with:
+  #         secrets: build/prod/waitlist
+  #         parse-json: true
+
+  #     - name: Add SHORT_SHA env property with commit short sha
+  #       run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+  #     - name: Build, tag, and push image to Amazon ECR
+  #       id: build-image
+  #       env:
+  #         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+  #         ECR_REPOSITORY: waitlist
+  #       run: |
+  #         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:PROD_$SHORT_SHA . \
+  #         --build-arg NODE_ENV=$BUILD_PROD_WAITLIST_NODE_ENV \
+  #         --build-arg PORT=$BUILD_PROD_WAITLIST_PORT \
+  #         --build-arg NPM_TOKEN=$BUILD_PROD_WAITLIST_NPM_TOKEN \
+  #         --build-arg FORT_AWESOME_NPM_TOKEN=$BUILD_PROD_WAITLIST_FORT_AWESOME_NPM_TOKEN \
+  #         --build-arg REACT_APP_API_SERVER=$BUILD_PROD_WAITLIST_REACT_APP_API_SERVER \
+  #         --build-arg REACT_APP_CCP_FRONTEND_HOST=$BUILD_PROD_WAITLIST_REACT_APP_CCP_FRONTEND_HOST
+  #         echo "docker push $ECR_REGISTRY/$ECR_REPOSITORY:PROD_$SHORT_SHA"
+  #         docker push $ECR_REGISTRY/$ECR_REPOSITORY:PROD_$SHORT_SHA
+  #         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:PROD_$SHORT_SHA"
+

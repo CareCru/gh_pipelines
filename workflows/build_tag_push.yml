@@ -1,0 +1,56 @@
+name: Create and Publish Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        required: true
+        type: string
+      context:
+        type: string
+        required: true
+        default: "."
+      tag: 
+        type: string
+      env_list:
+        type: list
+      aws_region:
+        type: string
+        required: true
+        default: "ca-central-1"
+
+    secrets:
+      aws_access_id:
+        required: true
+      aws_access_key:
+        required: true
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        name: Configure AWS Credentials
+        with: 
+          aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+          aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+          aws-region: ca-central-1
+
+      - uses: actions/checkout@v2
+      
+      - name: Setup BuildX
+        uses: docker/setup-buildx-action@v1
+
+      - uses: aws-actions/amazon-ecr-login@v1
+        name: AWS ECR Login
+        id: login-ecr
+
+      - name: Build and Push the Image
+        uses: docker/build-push-action@v2
+        with:
+          build-args: ${{inputs.env_list}}
+          context: ${{inputs.context}}
+          push: true
+          tags: ${{inputs.image_name}}:${{inputs.tag}}
+
+
