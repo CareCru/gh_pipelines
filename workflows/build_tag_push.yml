@@ -8,27 +8,22 @@ on:
         type: string
       context:
         type: string
-        required: true
         default: "."
       tag: 
         type: string
-      env_list:
-        type: list
+      secret_name:
+        type: string
       aws_region:
         type: string
-        required: true
         default: "ca-central-1"
 
-    secrets:
-      aws_access_id:
-        required: true
-      aws_access_key:
-        required: true
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
+      - uses: actions/checkout@v2
+
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
         with: 
@@ -36,8 +31,14 @@ jobs:
           aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
           aws-region: ca-central-1
 
-      - uses: actions/checkout@v2
-      
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        uses: say8425/aws-secrets-manager-actions@v1
+        with:
+          AWS_ACCESS_KEY_ID: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+          AWS_DEFAULT_REGION: ca-central-1
+          SECRET_NAME: ${{inputs.secret_name}}
+
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
 
@@ -48,7 +49,6 @@ jobs:
       - name: Build and Push the Image
         uses: docker/build-push-action@v2
         with:
-          build-args: ${{inputs.env_list}}
           context: ${{inputs.context}}
           push: true
           tags: ${{inputs.image_name}}:${{inputs.tag}}
