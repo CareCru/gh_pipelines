@@ -22,8 +22,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v2
-
+    
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
         with: 
