@@ -22,14 +22,14 @@ on:
       secret_name:
         description: AWS Secret Manger Secret Name
         type: string
-      region:
-        type: string
-        default: "ca-central-1"
+
     secrets:
       aws_access_key_id:
         required: true
       aws_secret_access_key:
         required: true
+      region:
+        type: string
 jobs:
   build:
     runs-on: self-hosted
@@ -42,14 +42,14 @@ jobs:
         with: 
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
-          aws-region: ${{ inputs.region }}
+          aws-region: ${{ secrets.region }}
 
       - name: Read secrets from AWS Secrets Manager into environment variables
         uses: say8425/aws-secrets-manager-actions@v1
         with:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
-          AWS_DEFAULT_REGION: ${{inputs.aws_region}}
+          AWS_DEFAULT_REGION: ${{secrets.aws_region}}
           SECRET_NAME: ${{inputs.secret_name}}
 
       - name: Setup BuildX
