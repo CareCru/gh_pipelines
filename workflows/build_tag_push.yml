@@ -30,6 +30,8 @@ on:
         required: true
       region:
         required: true
+        default: "ca-central-1" 
+
 
 jobs:
   build:
