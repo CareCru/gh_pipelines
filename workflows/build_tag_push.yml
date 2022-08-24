@@ -29,7 +29,8 @@ on:
       aws_secret_access_key:
         required: true
       region:
-        type: string
+        required: true
+
 jobs:
   build:
     runs-on: self-hosted
