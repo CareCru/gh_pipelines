@@ -54,7 +54,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
           AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: ${{inputs.secret_name}}
+          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
 
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
