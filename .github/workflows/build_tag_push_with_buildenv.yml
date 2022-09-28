@@ -19,14 +19,6 @@ on:
         description: Context for where the Dockerfile exists
         type: string
         default: "."
-      tag:
-        description: Container image tag
-        default: "latest" 
-        type: string
-      user_tag:
-        description: Container image tag
-        default: "latest" 
-        type: string
       secret_name:
         description: AWS Secret Manger Secret Name
         type: string
@@ -44,7 +36,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
+      
+      - id: user-branch-tag
+        run: |
+          BRANCH_NAME_TAG=`echo ${GITHUB_HEAD_REF}| awk -F '/' '{print $1}'`
+          if [ -z "$GITHUB_HEAD_REF" ] ; 
+          then
+              TAG=$GITHUB_REF_NAME
+          else 
+              TAG=$BRANCH_NAME_TAG
+          fi 
+          echo $TAG
+          echo "::set-output name=user_tag::$TAG"
+          
+      - id: short_sha
+        run: |
+          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+          
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
         with: 
@@ -72,7 +80,7 @@ jobs:
         with:
           context: ${{inputs.context}}
           push: true
-          tags: ${{inputs.image_name}}:${{inputs.environment}}_${{inputs.tag}}, ${{inputs.image_name}}:${{inputs.environment}}_${{inputs.user_tag}}, ${{inputs.image_name}}:${{inputs.environment}}_latest
+          tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.user_branch_tag.outputs.user_tag }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
 
 
