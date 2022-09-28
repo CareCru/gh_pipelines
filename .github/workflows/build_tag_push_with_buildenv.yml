@@ -49,7 +49,7 @@ jobs:
           aws-region: ${{inputs.region}}
 
       - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: say8425/aws-secrets-manager-actions@v1
+        uses: say8425/aws-secrets-manager-actions@v2
         with:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
