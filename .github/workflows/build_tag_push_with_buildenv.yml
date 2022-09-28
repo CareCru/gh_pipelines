@@ -7,6 +7,10 @@ on:
         description: Name of container image without a tag 
         required: true
         type: string
+      environment:
+        description: Name of Environment
+        required: false
+        type: string
       ecr_repo:
         description: Name of ECR repo used to store container images
         required: true
@@ -64,6 +68,7 @@ jobs:
         with:
           context: ${{inputs.context}}
           push: true
-          tags: ${{inputs.image_name}}:${{inputs.tag}}
+          tags: ${{inputs.image_name}}:${{inputs.environment}}_${{inputs.tag}}, ${{inputs.image_name}}:${{inputs.environment}}_${{inputs.user_tag}}, ${{inputs.image_name}}:${{inputs.environment}}_latest
+
 
 
