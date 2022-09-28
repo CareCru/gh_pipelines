@@ -44,8 +44,10 @@ jobs:
           if [ -z "$GITHUB_HEAD_REF" ] ; 
           then
               TAG=$GITHUB_REF_NAME
+              echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF
           else 
               TAG=$BRANCH_NAME_TAG
+              echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF
           fi 
           echo $TAG
           echo "::set-output name=user_tag::$TAG"
