@@ -23,6 +23,10 @@ on:
         description: Container image tag
         default: "latest" 
         type: string
+      user_tag:
+        description: Container image tag
+        default: "latest" 
+        type: string
       secret_name:
         description: AWS Secret Manger Secret Name
         type: string
