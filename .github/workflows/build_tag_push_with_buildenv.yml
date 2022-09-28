@@ -26,7 +26,7 @@ on:
       secret_name:
         description: AWS Secret Manger Secret Name
         type: string
-      aws_region:
+      region:
         type: string
         default: "ca-central-1"
     secrets:
