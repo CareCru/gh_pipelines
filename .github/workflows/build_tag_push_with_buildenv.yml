@@ -93,7 +93,12 @@ jobs:
         id: build_arg_list
         run : |
           echo "::set-output name=env::`cat .env`"
-          
+ 
+      - name: Setup Build Arg List
+        id: build_arg_list_debug
+        run : |
+          echo ${{ steps.build_arg_list.outputs.env }}
+ 
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
 
