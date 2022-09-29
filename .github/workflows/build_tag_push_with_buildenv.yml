@@ -39,7 +39,7 @@ jobs:
       
       - id: user_branch_tag
         run: |
-          BRANCH_NAME_TAG=`echo ${GITHUB_HEAD_REF}| awk -F '/' '{print $1}'`
+          BRANCH_NAME_TAG=`echo ${GITHUB_REF_NAME}| awk -F '/' '{print $1}'`
               echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF
               echo "BRANCH_NAME_TAG: $BRANCH_NAME_TAG
           if [ -z "$GITHUB_HEAD_REF" ] ; 
@@ -101,7 +101,7 @@ jobs:
         with:
           context: ${{inputs.context}}
           push: true
-          tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.user_branch_tag.outputs.user_tag }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
+          tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
 
 
