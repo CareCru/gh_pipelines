@@ -88,7 +88,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
           AWS_DEFAULT_REGION: ${{inputs.region}}
           SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
-          
+          OUTPUT_PATH: '.env' 
+      
       - name: Setup Build Arg List
         id: build_arg_list
         run : |
