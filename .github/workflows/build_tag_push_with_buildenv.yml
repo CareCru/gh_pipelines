@@ -96,9 +96,9 @@ jobs:
         name: AWS ECR Login
         id: login-ecr
         
-      - id: env_output
+      - id: debug_output
         run: |
-          env
+          docker-compose --version
           
       - name: Build and Push the Image
         uses: docker/build-push-action@v2
