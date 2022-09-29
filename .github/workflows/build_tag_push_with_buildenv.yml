@@ -40,13 +40,13 @@ jobs:
       - id: user_branch_tag
         run: |
           BRANCH_NAME_TAG=`echo ${GITHUB_HEAD_REF}| awk -F '/' '{print $1}'`
+              echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF
+              echo "BRANCH_NAME_TAG: $BRANCH_NAME_TAG
           if [ -z "$GITHUB_HEAD_REF" ] ; 
           then
               TAG=$GITHUB_REF_NAME
-              echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF
           else 
               TAG=$BRANCH_NAME_TAG
-              echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF
           fi 
           echo $TAG
           echo "::set-output name=user_tag::$TAG"
