@@ -15,11 +15,6 @@ on:
         description: Name of ECR repo used to store container images
         required: true
         type: string
-      build_args:
-        description: Build Arguments
-        # Expects List, List type is a newline-delimited string
-        required: true
-        type: string
       context:
         description: Context for where the Dockerfile exists
         type: string
@@ -59,11 +54,11 @@ jobs:
       - id: var_set_outputs
         run: |
           echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
-          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | cut -c1-8`"          
-          echo "::set-output name=github_ref::`echo ${GITHUB_REF} | cut -c1-8`"          
-          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME} | cut -c1-8`"          
-          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE} | cut -c1-8`"          
-          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY} | cut -c1-8`"
+          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
+          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"          
+          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"          
+          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"          
+          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
           
       - id: var_read_outputs
         run: |
@@ -93,23 +88,24 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
           AWS_DEFAULT_REGION: ${{inputs.region}}
           SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
-
+          
+      - name: Setup Build Arg List
+        id: build_arg_list
+        run : |
+          echo "::set-output name=env::`cat .env`"
+          
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
 
       - uses: aws-actions/amazon-ecr-login@v1
         name: AWS ECR Login
         id: login-ecr
-        
-      - id: debug_output
-        run: |
-          docker-compose --version
           
       - name: Build and Push the Image
         uses: docker/build-push-action@v2
         with:
           context: ${{inputs.context}}
-          build-args: ${{ inputs.build_args }}
+          build-args: ${{ steps.build_arg_list.outputs.env }}
           push: true
           tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
