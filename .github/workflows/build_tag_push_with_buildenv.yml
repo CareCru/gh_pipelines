@@ -62,13 +62,13 @@ jobs:
           
       - id: var_read_outputs
         run: |
-          echo ${{ steps.user_branch_tag.outputs.user_tag }}          
-          echo ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
-          echo ${{ steps.var_set_outputs.outputs.github_head_ref }}      
-          echo ${{ steps.var_set_outputs.outputs.github_ref }}
-          echo ${{ steps.var_set_outputs.outputs.github_ref_name }}
-          echo ${{ steps.var_set_outputs.outputs.github_ref_type }}
-          echo ${{ steps.var_set_outputs.outputs.github_repository }}
+          echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}          
+          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
+          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}      
+          echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
+          echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
+          echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
+          echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
           
       - id: short_sha
         run: |
