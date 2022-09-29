@@ -93,7 +93,9 @@ jobs:
       - name: Setup Build Arg List
         id: build_arg_list
         run : |
-          echo "::set-output name=env::`cat .env`"
+          cat .env
+          echo "#####"
+          echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`"
  
       - name: Setup Build Arg List
         id: build_arg_list_debug
