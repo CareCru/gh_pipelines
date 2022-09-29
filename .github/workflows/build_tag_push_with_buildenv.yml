@@ -11,6 +11,10 @@ on:
         description: Name of Environment
         required: false
         type: string
+      build_args:
+        description: Build Arguments
+        required: true
+        type: string
       ecr_repo:
         description: Name of ECR repo used to store container images
         required: true
@@ -115,8 +119,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ${{inputs.context}}
-          build-args: |
-            `echo ${{ steps.build_arg_list.outputs.env }}`
+          build-args: ${{inputs.build_args}}
           push: true
           tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
