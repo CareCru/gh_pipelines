@@ -95,7 +95,11 @@ jobs:
       - uses: aws-actions/amazon-ecr-login@v1
         name: AWS ECR Login
         id: login-ecr
-
+        
+      - id: env_output
+        run: |
+          env
+          
       - name: Build and Push the Image
         uses: docker/build-push-action@v2
         with:
