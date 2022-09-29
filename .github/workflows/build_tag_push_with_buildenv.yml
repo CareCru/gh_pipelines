@@ -15,6 +15,11 @@ on:
         description: Name of ECR repo used to store container images
         required: true
         type: string
+      build_args:
+        description: Build Arguments
+        # Expects List, List type is a newline-delimited string
+        required: true
+        type: string
       context:
         description: Context for where the Dockerfile exists
         type: string
@@ -104,6 +109,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ${{inputs.context}}
+          build-args: ${{ inputs.build_args }}
           push: true
           tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
