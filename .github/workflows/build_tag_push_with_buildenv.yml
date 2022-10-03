@@ -113,5 +113,6 @@ jobs:
       - name: Push Image to ECR
         id: push_image_ecr
         run : |
+          history
           docker image ls
           docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
