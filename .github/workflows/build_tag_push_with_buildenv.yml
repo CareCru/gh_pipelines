@@ -83,7 +83,7 @@ jobs:
       - name: Setup Build Arg List
         id: build_arg_list
         run : |
-          echo "::set-output name=env::`BUILDARG=$(<.env) ; printf '%s\n' $BUILDARG `"
+          echo "::set-output name=env::`BUILDARG=$(<.env) ; printf '%s\r' $BUILDARG `"
 
  
       - name: Setup BuildX
