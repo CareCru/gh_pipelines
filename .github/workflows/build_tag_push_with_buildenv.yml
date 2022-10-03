@@ -102,7 +102,7 @@ jobs:
 #           tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
       - name: Build image
-        uses: ilteoood/docker_buildx@1.0.5
+        uses: ShaneGCareCru /docker_buildx@master
         with:
           publish: false
           platform: linux/amd64
