@@ -109,11 +109,13 @@ jobs:
           platform: linux/amd64
           buildArg: ${{ steps.build_arg_list.outputs.env }}
           imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
-          tag: ${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
+          tag: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
 
       - name: Push Image to ECR
         id: push_image_ecr
         run : |
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_latest
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_latest
           docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
+          #docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+
