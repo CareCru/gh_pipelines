@@ -102,9 +102,10 @@ jobs:
 #           tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
       - name: Build and publish image
-        uses: zmingxie/docker_buildx@master
+        uses: ilteoood/docker_buildx@1.0.5
         with:
           publish: false
+          platform: linux/amd64
           buildArg: ${{ steps.build_arg_list.outputs.env }}
           imageName: waitlist
           tag: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
