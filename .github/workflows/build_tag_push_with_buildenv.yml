@@ -11,10 +11,6 @@ on:
         description: Name of Environment
         required: false
         type: string
-      build_args:
-        description: Build Arguments
-        required: true
-        type: string
       ecr_repo:
         description: Name of ECR repo used to store container images
         required: true
@@ -93,18 +89,10 @@ jobs:
         name: AWS ECR Login
         id: login-ecr
           
-#       - name: Build and Push the Image
-#         uses: docker/build-push-action@v2
-#         with:
-#           context: ${{inputs.context}}
-#           build-args: "`cat .env`"
-#           push: true
-#           tags: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
-
       - name: Build image
         uses: ilteoood/docker_buildx@master
         with:
-          publish: false
+          publish: false # build done in next step to have multiple tags
           load: true
           platform: linux/amd64
           buildArg: ${{ steps.build_arg_list.outputs.env }}
@@ -116,6 +104,5 @@ jobs:
         run : |
           docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
           docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_latest
-          #docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
           docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
 
