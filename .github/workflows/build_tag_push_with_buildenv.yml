@@ -116,6 +116,6 @@ jobs:
         run : |
           docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
           docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
-          #docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+          #docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
 
