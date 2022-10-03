@@ -107,7 +107,7 @@ jobs:
           publish: false # Publish done in a later step to add additional tags
           platform: linux/amd64
           buildArg: ${{ steps.build_arg_list.outputs.env }}
-          imageName: ${{inputs.image_name}}
+          imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
           tag: ${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
 
       - name: Push Image to ECR
