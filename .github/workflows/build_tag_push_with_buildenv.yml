@@ -106,6 +106,7 @@ jobs:
         with:
           publish: false
           buildArg: ${{ steps.build_arg_list.outputs.env }}
-          imageName: YOUR_IMAGE_NAME_HERE
+          imageName: waitlist
+          tag: ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}, ${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}, ${{inputs.image_name}}:${{inputs.environment}}_latest
 
 
