@@ -48,9 +48,31 @@ jobs:
       - uses: aws-actions/amazon-ecr-login@v1
         name: AWS ECR Login
         id: login-ecr
-
+        
+      - id: var_set_outputs
+        name: Set outputs for logs
+        run: |
+          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
+          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
+          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"          
+          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"          
+          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"          
+          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
+          
+      - id: var_read_outputs
+        name: Display Outputs for logs
+        run: |
+          echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}          
+          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
+          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}      
+          echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
+          echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
+          echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
+          echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
+          
       # Create Short SHA variable, used for tagging images
       - id: short_sha
+        name: Set Short SHA as var output
         run: |
           echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
 
