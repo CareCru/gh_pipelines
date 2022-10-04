@@ -20,6 +20,10 @@ on:
         description: Name of ECR registry
         required: true
         type: string
+      tag:
+        description: optional tag to deploy
+        required: false
+        type: string
       region:
         type: string
         default: "ca-central-1"
@@ -58,8 +62,12 @@ jobs:
           ECR_REGISTRY: ${{ inputs.ecr_registry }}
           ECR_REPOSITORY: ${{inputs.app_name}}
         run: |
-          # if no value has been set for tag then deploy latest else deploy what's set for tag
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_latest"
+          if [ -z "${{ inputs.tag }}" ]
+          then
+            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_latest"
+          else
+            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_${{inputs.tag}}"
+          fi
           
       # Step needed for downloading current task def.
       - name: Install AWS CLI Tools
