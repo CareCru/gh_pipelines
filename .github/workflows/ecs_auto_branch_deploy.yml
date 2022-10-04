@@ -1,0 +1,98 @@
+# This is a basic workflow to help you get started with Actions
+name: Deploy to ECS
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        description: Name of container image without a tag 
+        required: true
+        type: string
+      environment:
+        description: Name of Environment
+        required: false
+        type: string
+      ecr_repo:
+        description: Name of ECR repo used to store container images
+        required: true
+        type: string
+       ecr_registry:
+        description: Name of ECR registry
+        required: true
+        type: string
+      region:
+        type: string
+        default: "ca-central-1"
+    secrets:
+      aws_access_key_id:
+        required: true
+      aws_secret_access_key:
+        required: true
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        name: Configure AWS Credentials
+        with: 
+          aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+          aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+          aws-region: ${{ inputs.region }}
+
+      # ECR Login, depends on AWS Creds
+      - uses: aws-actions/amazon-ecr-login@v1
+        name: AWS ECR Login
+        id: login-ecr
+
+      # Create Short SHA variable, used for tagging images
+      - id: short_sha
+        run: |
+          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+
+      # Grab the image registry/repo:tag as a variable derived from this job
+      # Job initially checks to confirm image is available
+      - name: Set Container Image Name
+        id: image-name
+        env:
+          ECR_REGISTRY: ${{ inputs.ecr_registry }}
+          ECR_REPOSITORY: ${{inputs.app_name}}
+        run: |
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_latest"
+          
+      # Step needed for downloading current task def.
+      - name: Install AWS CLI Tools
+        id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@v1
+        with:
+          version: 2
+
+      - name: Grab Live Task_Definition
+        env:
+          environment: ${{inputs.environment}}
+          appName: ${{inputs.app_name}}
+          aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+          aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+          aws-region: ${{ inputs.region }}
+        run: |
+          echo "" > task_def.json
+          until  grep "family" task_def.json
+          do
+              aws ecs describe-task-definition --task-definition ${environment}-${appName} | jq .taskDefinition | jq "del(.taskDefinitionArn,.requiresAttributes,.revision, .status, .requiresAttributes, .compatibilities)" > task_def.json
+              sleep 2
+          done
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task_def.json
+          container-name: ${{inputs.environment}}-${{inputs.app_name}}
+          image: ${{ steps.image-name.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{inputs.environment}}-${{inputs.app_name}}
+          cluster: ${{inputs.environment}}-ecs-cluster
+          wait-for-service-stability: true
