@@ -64,7 +64,7 @@ jobs:
         run: |
           if [ -z "${{ inputs.tag }}" ]
           then
-            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_latest"
+            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}"
           else
             echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_${{inputs.tag}}"
           fi
