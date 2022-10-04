@@ -24,9 +24,7 @@ on:
         description: optional tag to deploy
         required: false
         type: string
-      region:
-        type: string
-        default: "ca-central-1"
+
     secrets:
       aws_access_key_id:
         required: true
@@ -37,12 +35,24 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Set Region
+        id: set_region
+        env:
+          ENV: ${{ inputs.environment }}
+        run: |
+          if [ "$ENV" = "prod-us" ]
+          then
+            echo "::set-output name=region::'us-west-1'"
+          else
+            echo "::set-output name=region::'ca-central-1'"
+          fi
+          
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
         with: 
           aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
           aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
-          aws-region: ${{ inputs.region }}
+          aws-region: ${{ steps.set_region.outputs.region }}
 
       # ECR Login, depends on AWS Creds
       - uses: aws-actions/amazon-ecr-login@v1
@@ -104,7 +114,7 @@ jobs:
           appName: ${{inputs.app_name}}
           aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
           aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
-          aws-region: ${{ inputs.region }}
+          aws-region: ${{ steps.set_region.outputs.region }}
         run: |
           echo "" > task_def.json
           until  grep "family" task_def.json
