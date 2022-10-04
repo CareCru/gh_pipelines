@@ -116,6 +116,7 @@ jobs:
           aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
           aws-region: ${{ steps.set_region.outputs.region }}
         run: |
+          exit 1
           echo "" > task_def.json
           until  grep "family" task_def.json
           do
