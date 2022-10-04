@@ -16,7 +16,7 @@ on:
         description: Name of ECR repo used to store container images
         required: true
         type: string
-       ecr_registry:
+      ecr_registry:
         description: Name of ECR registry
         required: true
         type: string
@@ -58,6 +58,7 @@ jobs:
           ECR_REGISTRY: ${{ inputs.ecr_registry }}
           ECR_REPOSITORY: ${{inputs.app_name}}
         run: |
+          # if no value has been set for tag then deploy latest else deploy what's set for tag
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_latest"
           
       # Step needed for downloading current task def.
