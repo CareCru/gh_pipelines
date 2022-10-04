@@ -103,6 +103,7 @@ jobs:
         id: push_image_ecr
         run : |
           docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}
           docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_latest
           docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
 
