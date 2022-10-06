@@ -38,6 +38,7 @@ jobs:
       - uses: actions/checkout@v2
           
       - id: var_set_outputs
+        name: Set output values
         run: |
           echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
           echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
@@ -47,6 +48,7 @@ jobs:
           echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
           
       - id: var_read_outputs
+        name: Display output values
         run: |
           echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}          
           echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
@@ -57,6 +59,7 @@ jobs:
           echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
           
       - id: short_sha
+        name: Set short SHA
         run: |
           echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
           
