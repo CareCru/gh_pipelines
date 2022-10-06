@@ -96,7 +96,7 @@ jobs:
         
       - name: Build image
         uses: ilteoood/docker_buildx@master
-        if: ${{ steps.verify_image.outputs.exists }} == '1'
+        if: ${{ steps.verify_image.outputs.exists }} == 1
         with:
           publish: false # build done in next step to have multiple tags
           load: true
