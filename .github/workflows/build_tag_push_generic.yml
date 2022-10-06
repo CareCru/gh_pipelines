@@ -7,10 +7,6 @@ on:
         description: Name of container image without a tag 
         required: true
         type: string
-      environment:
-        description: Name of Environment
-        required: false
-        type: string
       ecr_repo:
         description: Name of ECR repo used to store container images
         required: true
@@ -19,9 +15,6 @@ on:
         description: Context for where the Dockerfile exists
         type: string
         default: "."
-      secret_name:
-        description: AWS Secret Manger Secret Name
-        type: string
       region:
         type: string
         default: "ca-central-1"
@@ -48,9 +41,8 @@ jobs:
           echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
           
       - id: var_read_outputs
-        name: Display output values
+        name: display output values
         run: |
-          echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}          
           echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
           echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}      
           echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
@@ -59,7 +51,7 @@ jobs:
           echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
           
       - id: short_sha
-        name: Set short SHA
+        name: Set Short SHA
         run: |
           echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
           
@@ -76,7 +68,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
           AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
+          SECRET_NAME: build/generic/npm_tokens
           OUTPUT_PATH: '.env' 
       
       - name: Setup Build Arg List
@@ -84,7 +76,6 @@ jobs:
         run : |
           echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`"
 
- 
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
 
@@ -106,28 +97,27 @@ jobs:
           platform: linux/amd64
           buildArg: ${{ steps.build_arg_list.outputs.env }}
           imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
-          tag: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
+          tag: ${{ steps.short_sha.outputs.tag }}
 
-      - name: Push Image to ECR
+      - name: Tag and Push 
         id: push_image_ecr
         run : |
           ## Set Tags 
-          TAG1="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}"
-          TAG2="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}"
-          TAG3="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_latest"
+          TAG1="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.var_set_outputs.outputs.github_head_ref }}"
+          TAG2="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.var_set_outputs.outputs.github_ref_name }}"
+          TAG3="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:latest"
           
           ## If image was already built, pull the image based on SHA tag
-          if [ ${{ steps.verify_image.outputs.exists }} == '0' ] ; then docker pull ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }} ; fi
+          if [ ${{ steps.verify_image.outputs.exists }} == '0' ] ; then docker pull ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} ; fi
           
           ## If github_head_ref is not set then don't create tag
-          if [ -z "${{ steps.var_set_outputs.outputs.github_head_ref }}" ] ; then echo "skip"; else docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  $TAG1; fi
+          if [ -z "${{ steps.var_set_outputs.outputs.github_head_ref }}" ] ; then echo "skip"; else docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }}  $TAG1; fi
           
           ## Tag with github ref name, if tag has chars that break the command exit successfully to not break workflow
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  $TAG2 || true
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }}  $TAG2 || true
           
           ## Tag with latest
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  $TAG3
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }}  $TAG3
           
           ## Push all tags to registry
           docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
-
