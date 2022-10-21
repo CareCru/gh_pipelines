@@ -145,11 +145,11 @@ jobs:
         run: |
           aws ecs wait tasks-stopped --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }}
           EXITCODE=`aws ecs describe-tasks --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }} | jq '.tasks[].containers[] | select(.name=="${{inputs.environment}}-${{inputs.app_name}}-migrations") | .exitCode'`
-          echo $EXITCODE
+          exit $EXITCODE
 
       - name: Task Def Cleaner
         uses: ScrumWorks/github-actions-aws-task-cleaner@v1
         with:
-            prefix: ${environment}-${appName}-migrations
+            prefix: ${{inputs.environment}}-${{inputs.app_name}}-migrations
             maxTasks: 6
             region: ${{ steps.set_region.outputs.region }}
