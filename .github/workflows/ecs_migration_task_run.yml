@@ -138,7 +138,7 @@ jobs:
       - name: Execute AWS ECS Task Definition
         id: run_tsk_def
         run: |
-          echo "::set-output name=task_arn::`aws ecs run-task --cluster ${{inputs.environment}}-ecs-cluster --task-definition ${environment}-${appName}-migrations:${{ steps.reg_tsk_def.outputs.task_revision }} --region ${{ steps.set_region.outputs.region }} --launch-type EC2 --output json | jq .tasks | jq '.[0].taskArn'`"
+          echo "::set-output name=task_arn::`aws ecs run-task --cluster ${{inputs.environment}}-ecs-cluster --task-definition ${{inputs.environment}}-${{inputs.app_name}}-migrations:${{ steps.reg_tsk_def.outputs.task_revision }} --region ${{ steps.set_region.outputs.region }} --launch-type EC2 --output json | jq .tasks | jq '.[0].taskArn'`"
 
       - name: Migration Task Wait
         id: tsk_run_wait
