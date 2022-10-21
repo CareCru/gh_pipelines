@@ -144,7 +144,7 @@ jobs:
         id: tsk_run_wait
         run: |
           aws ecs wait tasks-stopped --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }}
-          EXITCODE=`aws ecs describe-tasks --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }} | jq .tasks| jq '.[].containers' | jq '.[0].exitCode'
+          EXITCODE=`aws ecs describe-tasks --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }} | jq .tasks| jq '.[].containers' | jq '.[0].exitCode'`
           exit $EXITCODE
 
       - name: Task Def Cleaner
