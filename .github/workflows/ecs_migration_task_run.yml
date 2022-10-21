@@ -31,7 +31,7 @@ on:
       aws_secret_access_key:
         required: true
 jobs:
-  build:
+  deploy:
     runs-on: self-hosted
 
     steps:
