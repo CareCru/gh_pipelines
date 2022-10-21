@@ -127,7 +127,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task_def.json
-          container-name: ${{inputs.environment}}-${{inputs.app_name}}
+          container-name: ${{inputs.environment}}-${{inputs.app_name}}-migrations
           image: ${{ steps.image-name.outputs.image }}
 
       - name: Register AWS ECS Task Definition
