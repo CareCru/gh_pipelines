@@ -1,0 +1,155 @@
+# This is a basic workflow to help you get started with Actions
+name: Deploy to ECS
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        description: Name of container image without a tag 
+        required: true
+        type: string
+      environment:
+        description: Name of Environment
+        required: false
+        type: string
+      ecr_repo:
+        description: Name of ECR repo used to store container images
+        required: true
+        type: string
+      ecr_registry:
+        description: Name of ECR registry
+        required: true
+        type: string
+      tag:
+        description: optional tag to deploy
+        required: false
+        type: string
+
+    secrets:
+      aws_access_key_id:
+        required: true
+      aws_secret_access_key:
+        required: true
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Set Region
+        id: set_region
+        env:
+          ENV: ${{ inputs.environment }}
+        run: |
+          if [ "$ENV" = "prod-us" ]
+          then
+            echo "::set-output name=region::us-west-1"
+          else
+            echo "::set-output name=region::ca-central-1"
+          fi
+          
+      - uses: aws-actions/configure-aws-credentials@v1
+        name: Configure AWS Credentials
+        with: 
+          aws-access-key-id: ${{secrets.aws_access_key_id}}
+          aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
+          aws-region: ${{ steps.set_region.outputs.region }}
+
+      # ECR Login, depends on AWS Creds
+      - uses: aws-actions/amazon-ecr-login@v1
+        name: AWS ECR Login
+        id: login-ecr
+        
+      - id: var_set_outputs
+        name: Set outputs for logs
+        run: |
+          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
+          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
+          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"          
+          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"          
+          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"          
+          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
+          
+      - id: var_read_outputs
+        name: Display Outputs for logs
+        run: |
+          echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}          
+          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
+          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}      
+          echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
+          echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
+          echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
+          echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
+          
+      # Create Short SHA variable, used for tagging images
+      - id: short_sha
+        name: Set Short SHA as var output
+        run: |
+          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+
+      # Grab the image registry/repo:tag as a variable derived from this job
+      # Job initially checks to confirm image is available
+      - name: Set Container Image Name
+        id: image-name
+        env:
+          ECR_REGISTRY: ${{ inputs.ecr_registry }}
+          ECR_REPOSITORY: ${{inputs.app_name}}
+        run: |
+          if [ -z "${{ inputs.tag }}" ]
+          then
+            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}"
+          else
+            echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_${{inputs.tag}}"
+          fi
+          
+      # Step needed for downloading current task def.
+      - name: Install AWS CLI Tools
+        id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@v1
+        with:
+          version: 2
+
+      - name: Grab Migrations Live Task_Definition
+        env:
+          environment: ${{inputs.environment}}
+          appName: ${{inputs.app_name}}
+          aws-access-key-id: ${{secrets.GITHUBACTIONS_AWS_ACCESS_KEY}}
+          aws-secret-access-key:  ${{secrets.GITHUBACTIONS_AWS_SECRET_ACCESS_KEY}}
+          aws-region: ${{ steps.set_region.outputs.region }}
+        run: |
+          echo "" > task_def.json
+          until  grep "family" task_def.json
+          do
+              aws ecs describe-task-definition --task-definition ${environment}-${appName}-migrations | jq .taskDefinition | jq "del(.taskDefinitionArn,.requiresAttributes,.revision, .status, .requiresAttributes, .compatibilities)" > task_def.json
+              sleep 2
+          done
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task_def.json
+          container-name: ${{inputs.environment}}-${{inputs.app_name}}
+          image: ${{ steps.image-name.outputs.image }}
+
+      - name: Register AWS ECS Task Definition
+        id: reg_tsk_def
+        run: |
+          echo "::set-output name=task_revision::`aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }} --output json | jq .taskDefinition.revision`"
+
+      - name: Execute AWS ECS Task Definition
+        id: run_tsk_def
+        run: |
+          echo "::set-output name=task_arn::`aws ecs run-task --cluster ${{inputs.environment}}-ecs-cluster --task-definition ${environment}-${appName}-migrations:${{ steps.reg_tsk_def.outputs.task_revision }} --region ${{ steps.set_region.outputs.region }} --launch-type EC2 --output json | jq .tasks | jq '.[0].taskArn'`"
+
+      - name: Migration Task Wait
+        id: tsk_run_wait
+        run: |
+          aws ecs wait tasks-stopped --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }}
+          EXITCODE=`aws ecs describe-tasks --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }} | jq .tasks| jq '.[].containers' | jq '.[0].exitCode'
+          exit $EXITCODE
+
+      - name: Task Def Cleaner
+        uses: ScrumWorks/github-actions-aws-task-cleaner@v1
+        with:
+            prefix: ${environment}-${appName}-migrations
+            maxTasks: 6
+            region: ${{ steps.set_region.outputs.region }}
