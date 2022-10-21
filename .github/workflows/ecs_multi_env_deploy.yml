@@ -137,3 +137,10 @@ jobs:
           service: ${{inputs.environment}}-${{inputs.app_name}}
           cluster: ${{inputs.environment}}-ecs-cluster
           wait-for-service-stability: true
+          
+      - name: Task Def Cleaner
+        uses: ScrumWorks/github-actions-aws-task-cleaner@v1
+        with:
+            prefix: ${{inputs.environment}}-${{inputs.app_name}}
+            maxTasks: 6
+            region: ${{ steps.set_region.outputs.region }}
