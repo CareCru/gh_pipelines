@@ -87,7 +87,15 @@ jobs:
         id: verify_image
         run : |
           echo "::set-output name=exists::`docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?`"
-        
+
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+        with:
+          key: ${{inputs.image_name}}-docker-cache-{hash}
+          restore-keys: |
+            ${{inputs.image_name}}-docker-cache-
+            
       - name: Build image
         uses: ilteoood/docker_buildx@master
         if: steps.verify_image.outputs.exists == 1
