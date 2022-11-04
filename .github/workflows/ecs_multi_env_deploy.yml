@@ -43,8 +43,10 @@ jobs:
           if [ "$ENV" = "prod-us" ]
           then
             echo "::set-output name=region::us-west-1"
+            echo "::set-output name=cluster::prod"
           else
             echo "::set-output name=region::ca-central-1"
+            echo "::set-output name=cluster::$ENV"
           fi
           
       - uses: aws-actions/configure-aws-credentials@v1
@@ -135,7 +137,7 @@ jobs:
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{inputs.environment}}-${{inputs.app_name}}
-          cluster: ${{inputs.environment}}-ecs-cluster
+          cluster: ${{ steps.set_region.outputs.cluster }}-ecs-cluster
           wait-for-service-stability: true
           
       - name: Task Def Cleaner
