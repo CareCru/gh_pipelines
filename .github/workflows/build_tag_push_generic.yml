@@ -19,8 +19,8 @@ on:
         type: string
         default: "ca-central-1"
       submodules:
-        type: string
-        default: "false"
+        type: boolean 
+        default: false
     secrets:
       aws_access_key_id:
         required: true
