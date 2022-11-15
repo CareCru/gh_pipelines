@@ -34,6 +34,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        if: false == ${{inputs.submodules}}
       
       - uses: actions/checkout@v3
         if: ${{inputs.submodules}}
