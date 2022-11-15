@@ -18,6 +18,12 @@ on:
       region:
         type: string
         default: "ca-central-1"
+      pac:
+        type: string
+        default: ${{ github.token }}
+      submodules:
+        type: string
+        default: "false"
     secrets:
       aws_access_key_id:
         required: true
@@ -30,7 +36,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          submodules: recursive
+          submodules: ${{inputs.submodules}}
+          token: ${{inputs.pac}}
 
       - id: var_set_outputs
         name: Set output values
