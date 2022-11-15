@@ -25,17 +25,29 @@ on:
       region:
         type: string
         default: "ca-central-1"
+      submodules:
+        type: boolean
+        default: false
     secrets:
       aws_access_key_id:
         required: true
       aws_secret_access_key:
         required: true
+      pac:
+        required: false
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        if: false == ${{inputs.submodules}}
+      
+      - uses: actions/checkout@v3
+        if: ${{inputs.submodules}}
+        with:
+          submodules: 'recursive'
+          token: ${{secrets.pac}}
           
       - id: var_set_outputs
         name: Set output values
