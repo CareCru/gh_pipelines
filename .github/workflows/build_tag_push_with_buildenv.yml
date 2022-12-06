@@ -107,7 +107,7 @@ jobs:
       - name: Verify Image
         id: verify_image
         run : |
-          echo "::set-output name=exists::`docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?`"
+          echo "::set-output name=exists::`docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?`"
         
       - name: Build image
         uses: ilteoood/docker_buildx@master
