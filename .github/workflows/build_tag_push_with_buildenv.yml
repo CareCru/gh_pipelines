@@ -115,6 +115,7 @@ jobs:
         with:
           publish: false # build done in next step to have multiple tags
           load: true
+          context: ${{inputs.context}}
           platform: linux/amd64
           buildArg: ${{ steps.build_arg_list.outputs.env }}
           imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
