@@ -20,6 +20,9 @@ on:
       frontend_dir:
         type: string
         default: "web"
+      secret_name:
+        description: AWS Secret Manger Secret Name
+        type: string
     secrets:
       aws_access_key_id:
         required: true
