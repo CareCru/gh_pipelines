@@ -118,6 +118,7 @@ jobs:
           buildArg: ${{ steps.build_arg_list.outputs.env }}
           imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
           tag: ${{ steps.short_sha.outputs.tag }}
+          context: ${{inputs.context}}
 
       - name: Tag and Push
         id: push_image_ecr
