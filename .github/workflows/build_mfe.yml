@@ -65,15 +65,14 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 14
-     # replaced buildUniqueMicroFrontend
-     - name: yarn
+
+      # replaced buildUniqueMicroFrontend
+      - name: yarn
         uses: borales/actions-yarn@v4
         working-directory: ${{frontend_dir}}
         with:
           cmd: install
-        env:
-          NODE_AUTH_TOKEN: $NPM_TOKEN
-
+  
       - name: yarn_build
          uses: borales/actions-yarn@v4
          working-directory: ${{frontend_dir}}
