@@ -72,12 +72,12 @@ jobs:
         working-directory: ${{frontend_dir}}
         with:
           cmd: install
-  
+
       - name: yarn_build
-         uses: borales/actions-yarn@v4
-         working-directory: ${{frontend_dir}}
-         with:
-           cmd: build
+       uses: borales/actions-yarn@v4
+       working-directory: ${{frontend_dir}}
+       with:
+         cmd: build
 
       - id: short_sha
         name: Set Short SHA as var output
