@@ -61,13 +61,24 @@ jobs:
           cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
           cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
 
-      # replaced buildUniqueMicroFrontend
-      - id: yarn_build
-        name: Build with yarn
+      - id: setup_node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+     # replaced buildUniqueMicroFrontend
+     - name: yarn
+        uses: borales/actions-yarn@v4
         working-directory: ${{frontend_dir}}
-        run: |
-          yarn
-          yarn build
+        with:
+          cmd: install
+        env:
+          NODE_AUTH_TOKEN: $NPM_TOKEN
+
+      - name: yarn_build
+         uses: borales/actions-yarn@v4
+         working-directory: ${{frontend_dir}}
+         with:
+           cmd: build
 
       - id: short_sha
         name: Set Short SHA as var output
