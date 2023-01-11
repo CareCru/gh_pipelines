@@ -108,7 +108,7 @@ jobs:
         id: install-aws-cli
         uses: unfor19/install-aws-cli-action@v1.0.4
         with:
-          version: 2
+          version: 3
           verbose: true
 
 
