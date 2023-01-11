@@ -106,7 +106,7 @@ jobs:
       # Step needed for downloading current task def.
       - name: Install AWS CLI Tools
         id: install-aws-cli
-        uses: unfor19/install-aws-cli-action@v1
+        uses: unfor19/install-aws-cli-action@v1.0.4
         with:
           version: 2
 
