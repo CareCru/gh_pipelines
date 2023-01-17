@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       app_name:
-        description: Name of container image without a tag 
+        description: Name of container image without a tag
         required: true
         type: string
       environment:
@@ -43,15 +43,14 @@ jobs:
           if [ "$ENV" = "prod-us" ]
           then
             echo "::set-output name=region::us-west-1"
-            echo "::set-output name=cluster::prod"
           else
             echo "::set-output name=region::ca-central-1"
-            echo "::set-output name=cluster::$ENV"
           fi
-          
+          echo "::set-output name=cluster::$ENV"
+
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
-        with: 
+        with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{ steps.set_region.outputs.region }}
@@ -60,28 +59,28 @@ jobs:
       - uses: aws-actions/amazon-ecr-login@v1
         name: AWS ECR Login
         id: login-ecr
-        
+
       - id: var_set_outputs
         name: Set outputs for logs
         run: |
-          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
-          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
-          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"          
-          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"          
-          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"          
+          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"
+          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"
+          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"
+          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"
           echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
-          
+
       - id: var_read_outputs
         name: Display Outputs for logs
         run: |
-          echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}          
-          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
-          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}      
+          echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}
+          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}
+          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}
           echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
           echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
           echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
           echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
-          
+
       # Create Short SHA variable, used for tagging images
       - id: short_sha
         name: Set Short SHA as var output
@@ -102,14 +101,14 @@ jobs:
           else
             echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:${{inputs.environment}}_${{inputs.tag}}"
           fi
-          
+
       # Step needed for downloading current task def.
       - name: Install AWS CLI Tools
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install
-          
+
       - name: Grab Live Task_Definition
         env:
           environment: ${{inputs.environment}}
@@ -139,7 +138,7 @@ jobs:
           service: ${{inputs.environment}}-${{inputs.app_name}}
           cluster: ${{ steps.set_region.outputs.cluster }}-ecs-cluster
           wait-for-service-stability: true
-          
+
       - name: Task Def Cleaner
         uses: ScrumWorks/github-actions-aws-task-cleaner@v1
         with:
