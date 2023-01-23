@@ -1,0 +1,93 @@
+name: Builds and uploads MFE artifacts
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: Name of the service
+        required: true
+        type: string
+      environment:
+        description: Name of Environment
+        required: true
+        type: string
+      region:
+        type: string
+        default: "ca-central-1"
+      submodules:
+        type: boolean
+        default: false
+      frontend_dir:
+        type: string
+        default: "web"
+      secret_name:
+        description: AWS Secret Manger Secret Name
+        type: string
+    secrets:
+      aws_access_key_id:
+        required: true
+      aws_secret_access_key:
+        required: true
+      pac:
+        required: false
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+        if: false == ${{inputs.submodules}}
+
+      - uses: actions/checkout@v3
+        if: ${{inputs.submodules}}
+        with:
+          submodules: 'recursive'
+          token: ${{secrets.pac}}
+
+      - name: Read secrets from AWS Secrets Manager into environment variables
+        uses: say8425/aws-secrets-manager-actions@v2
+        with:
+          AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
+          AWS_DEFAULT_REGION: ${{inputs.region}}
+          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
+          OUTPUT_PATH: ${{frontend_dir}}/.env
+
+      - id: create_rc_files
+        name: Create RC files
+        working-directory: ${{frontend_dir}}
+        run: |
+          cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .yarnrc
+          cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+          cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
+          cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
+
+      - id: setup_node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
+      # replaced buildUniqueMicroFrontend
+      - name: yarn
+        uses: borales/actions-yarn@v4
+        working-directory: ${{frontend_dir}}
+        with:
+          cmd: install
+
+      - name: yarn_build
+        uses: borales/actions-yarn@v4
+        working-directory: ${{frontend_dir}}
+        with:
+          cmd: build
+
+      - id: short_sha
+        name: Set Short SHA as var output
+        run: |
+          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+
+      # replaces microFrontendArtifactUpload
+      - id: s3_upload_artifacts
+        name: Upload artifacts to S3
+        working-directory: ${{frontend_dir}}/build
+        run: |
+          aws s3 cp . s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+          aws s3 sync . s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --delete
