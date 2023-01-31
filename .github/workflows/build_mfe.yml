@@ -50,11 +50,11 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
           AWS_DEFAULT_REGION: ${{inputs.region}}
           SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
-          OUTPUT_PATH: ${{frontend_dir}}/.env
+          OUTPUT_PATH: ${{inputs.frontend_dir}}/.env
 
       - id: create_rc_files
         name: Create RC files
-        working-directory: ${{frontend_dir}}
+        working-directory: ${{inputs.frontend_dir}}
         run: |
           cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .yarnrc
           cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
@@ -69,13 +69,13 @@ jobs:
       # replaced buildUniqueMicroFrontend
       - name: yarn
         uses: borales/actions-yarn@v4
-        working-directory: ${{frontend_dir}}
+        working-directory: ${{inputs.frontend_dir}}
         with:
           cmd: install
 
       - name: yarn_build
         uses: borales/actions-yarn@v4
-        working-directory: ${{frontend_dir}}
+        working-directory: ${{inputs.frontend_dir}}
         with:
           cmd: build
 
@@ -87,7 +87,7 @@ jobs:
       # replaces microFrontendArtifactUpload
       - id: s3_upload_artifacts
         name: Upload artifacts to S3
-        working-directory: ${{frontend_dir}}/build
+        working-directory: ${{inputs.frontend_dir}}/build
         run: |
-          aws s3 cp . s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-          aws s3 sync . s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --delete
+          aws s3 cp . s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+          aws s3 sync . s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --delete
