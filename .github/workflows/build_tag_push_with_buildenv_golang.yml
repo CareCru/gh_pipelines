@@ -107,7 +107,7 @@ jobs:
           env_file="$(cat .env)"
           IFS=$'\n'
           env_array=($env_file)
-          build_args = ""
+          build_args=""
           for env_var in "${env_array[@]}"; do
             key="$(echo "$env_var" | cut -d '=' -f 1)"
             value="$(echo "$env_var" | cut -d '=' -f 2)"
