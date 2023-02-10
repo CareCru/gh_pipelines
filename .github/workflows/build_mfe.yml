@@ -50,11 +50,6 @@ jobs:
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{ inputs.region }}
 
-      # ECR Login, depends on AWS Creds
-      - uses: aws-actions/amazon-ecr-login@v1
-        name: AWS ECR Login
-        id: login-ecr
-        
       - name: Read secrets from AWS Secrets Manager into environment variables
         uses: say8425/aws-secrets-manager-actions@v2
         with:
