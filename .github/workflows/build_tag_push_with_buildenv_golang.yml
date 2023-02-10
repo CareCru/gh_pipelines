@@ -104,7 +104,7 @@ jobs:
       - name: convert .env to new line list
         id: env_list_conversion
         run : |
-          env_file = "$(cat .env)"
+          env_file="$(cat .env)"
           IFS=$'\n'
           env_array=($env_file)
           build_args = ""
