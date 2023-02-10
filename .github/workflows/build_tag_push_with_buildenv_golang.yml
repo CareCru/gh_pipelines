@@ -140,5 +140,5 @@ jobs:
           platforms: linux/amd64
           build-args: |
             ${{ steps.env_list_conversion.outputs.list }}
-          imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+          imageName:  ${{ steps.env_list_conversion.outputs.list }}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
