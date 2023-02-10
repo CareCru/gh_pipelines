@@ -129,7 +129,7 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          buildArgs: ${{ steps.build_arg_list.outputs.env }}
+          build-args: ${{ steps.build_arg_list.outputs.env }}
           imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
             
