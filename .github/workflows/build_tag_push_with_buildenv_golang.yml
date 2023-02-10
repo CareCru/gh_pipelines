@@ -112,7 +112,8 @@ jobs:
             key="$(echo "$env_var" | cut -d '=' -f 1)"
             value="$(echo "$env_var" | cut -d '=' -f 2)"
             build_args+="$key=$value "
-          done  
+          done
+          echo $build_args
 
       - name: Setup Build Arg List
         id: build_arg_list
@@ -142,6 +143,6 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${build_args}
+          build-args: $build_args
           imageName:  ${{ steps.env_list_conversion.outputs.list }}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
