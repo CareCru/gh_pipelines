@@ -101,6 +101,16 @@ jobs:
           SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
           OUTPUT_PATH: '.env'
 
+
+      - name: convert .env to new line list
+        id: env_list_conversion
+        run : |
+          comma_separated_string=${{ steps.build_arg_list.outputs.env }}
+          newline_delimited_string=$(echo "$comma_separated_string" | sed 's/,/\n/g')
+          echo "::set-output name=list::`echo ${newline_delimited_string}`"
+
+echo "$newline_delimited_string"
+
       - name: Setup Build Arg List
         id: build_arg_list
         run : |
@@ -129,7 +139,7 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${{ steps.build_arg_list.outputs.env }}
+          build-args: ${{ steps.env_list_conversion.outputs.list }}
           imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
             
