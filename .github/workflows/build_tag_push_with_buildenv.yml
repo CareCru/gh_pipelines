@@ -37,6 +37,8 @@ on:
         required: true
       aws_secret_access_key:
         required: true
+      cicd_ssh_access_key:
+        required: false
       pac:
         required: false
 jobs:
@@ -78,7 +80,14 @@ jobs:
         name: Set short SHA
         run: |
           echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
-
+          
+      - id: ssh_key
+        name: Output SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.cicd_ssh_access_key }}" > ~/.ssh/id_rsa
+          chmod 400 ~/.ssh/id_rsa
+          
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
         with:
