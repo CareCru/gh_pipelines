@@ -113,7 +113,7 @@ jobs:
             value="$(echo "$env_var" | cut -d '=' -f 2)"
             build_args+="$key=$value "
           done
-          echo "::set-env name=build_args::$build_args"
+          echo "build_args=$build_args" >> $GITHUB_ENV
           
 
       - name: Setup Build Arg List
