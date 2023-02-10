@@ -42,7 +42,19 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{secrets.pac}}
+          
+      - uses: aws-actions/configure-aws-credentials@v1
+        name: Configure AWS Credentials
+        with: 
+          aws-access-key-id: ${{secrets.aws_access_key_id}}
+          aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
+          aws-region: ${{ steps.set_region.outputs.region }}
 
+      # ECR Login, depends on AWS Creds
+      - uses: aws-actions/amazon-ecr-login@v1
+        name: AWS ECR Login
+        id: login-ecr
+        
       - name: Read secrets from AWS Secrets Manager into environment variables
         uses: say8425/aws-secrets-manager-actions@v2
         with:
