@@ -85,6 +85,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.cicd_ssh_access_key }}" > ~/.ssh/id_rsa
           chmod 400 ~/.ssh/id_rsa
+          ENV GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa"
           
       - name: Read secrets from AWS Secrets Manager into environment variables
         uses: say8425/aws-secrets-manager-actions@v2
