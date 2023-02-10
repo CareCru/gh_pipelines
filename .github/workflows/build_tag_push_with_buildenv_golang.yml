@@ -113,7 +113,8 @@ jobs:
             value="$(echo "$env_var" | cut -d '=' -f 2)"
             build_args+="$key=$value "
           done
-          echo $build_args
+          echo "::set-env name=build_args::$build_args"
+          
 
       - name: Setup Build Arg List
         id: build_arg_list
