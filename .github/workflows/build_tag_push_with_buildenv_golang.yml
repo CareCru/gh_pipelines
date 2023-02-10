@@ -105,10 +105,8 @@ jobs:
       - name: convert .env to new line list
         id: env_list_conversion
         run : |
-          comma_separated_string=${{ steps.build_arg_list.outputs.env }}
-          newline_delimited_string=$(echo "$comma_separated_string" | sed 's/,/\n/g')
-          echo "::set-output name=list::$(echo "$comma_separated_string" | sed 's/,/\n/g')"
-          echo "$newline_delimited_string"
+          echo "::set-output name=list::$(cat .env)"
+          
 
       - name: Setup Build Arg List
         id: build_arg_list
