@@ -142,39 +142,3 @@ echo "$newline_delimited_string"
           build-args: ${{ steps.env_list_conversion.outputs.list }}
           imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
-            
-      - name: Build image
-        uses: ilteoood/docker_buildx@master
-        if: steps.verify_image.outputs.exists == 1
-        with:
-          publish: false # build done in next step to have multiple tags
-          load: true
-          context: ${{inputs.context}}
-          dockerFile: ${{inputs.dockerfile}}
-          platform: linux/amd64
-          buildArg: ${{ steps.build_arg_list.outputs.env }}
-          imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
-          tag: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
-
-      - name: Push Image to ECR
-        id: push_image_ecr
-        run : |
-          ## Set Tags
-          TAG1="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_head_ref }}"
-          TAG2="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}"
-          TAG3="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_latest"
-
-          ## If image was already built, pull the image based on SHA tag
-          if [ ${{ steps.verify_image.outputs.exists }} == '0' ] ; then docker pull ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }} ; fi
-
-          ## If github_head_ref is not set then don't create tag
-          if [ -z "${{ steps.var_set_outputs.outputs.github_head_ref }}" ] ; then echo "skip"; else docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  $TAG1; fi
-
-          ## Tag with github ref name, if tag has chars that break the command exit successfully to not break workflow
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  $TAG2 || true
-
-          ## Tag with latest
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}  $TAG3
-
-          ## Push all tags to registry
-          docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
