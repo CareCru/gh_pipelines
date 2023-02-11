@@ -109,18 +109,8 @@ jobs:
       - name: convert .env to new line list
         id: env_list_conversion
         run : |
-          env_file="$(cat .env)"
-          IFS=$'\n'
-          env_array=($env_file)
-          build_args=""
-          for env_var in "${env_array[@]}"; do
-            key="$(echo "$env_var" | cut -d '=' -f 1)"
-            value="$(echo "$env_var" | cut -d '=' -f 2)"
-            build_args+="$key=$value "
-          done
-          echo "build_args=$build_args" >> $GITHUB_ENV
+          multiline_file=$(cat .env) >> $GITHUB_ENV
 
-          
       - name: Setup Build Arg List
         id: build_arg_list
         run : |
@@ -149,6 +139,6 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${{ env.MULTILINE_VAR }}
+          build-args: ${{ env.multiline_file }}
           imageName:  ${{ steps.env_list_conversion.outputs.list }}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
