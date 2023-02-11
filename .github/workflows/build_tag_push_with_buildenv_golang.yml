@@ -41,6 +41,11 @@ on:
         required: false
       pac:
         required: false
+env:
+  MULTILINE_VAR: |
+    line1=1
+    line2=2
+    line3=3
 jobs:
   build:
     runs-on: self-hosted
@@ -144,6 +149,6 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: "${{ env.build_args }}"
+          build-args: ${{ env.MULTILINE_VAR }}
           imageName:  ${{ steps.env_list_conversion.outputs.list }}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
