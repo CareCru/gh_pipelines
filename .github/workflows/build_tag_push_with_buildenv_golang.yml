@@ -111,12 +111,17 @@ jobs:
           contents=$(cat .env)
           echo "MY_VARIABLE_NAME=${contents}" >> $GITHUB_ENV
           
-      - name: step
+      - name: create string
         run: |
-          MY_VAR='line 1
-          line 2
-          line 3'
-          echo "$MY_VAR" >> $GITHUB_ENV
+          MY_STRING=$(cat << EOF
+          first line
+          second line
+          third line
+          EOF
+          )
+          echo "MY_STRING<<EOF" >> $GITHUB_ENV
+          echo "$MY_STRING" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
         
       - name: convert .env to new line list
         id: env_list_conversion
