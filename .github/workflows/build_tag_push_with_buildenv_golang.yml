@@ -105,7 +105,12 @@ jobs:
           AWS_DEFAULT_REGION: ${{inputs.region}}
           SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
           OUTPUT_PATH: '.env'
-
+          
+      - name: Set multiline variable from file
+        run: |
+          contents=$(cat .env)
+          echo "MY_VARIABLE_NAME=${contents}" >> $GITHUB_ENV
+          
       - name: convert .env to new line list
         id: env_list_conversion
         run : |
@@ -139,6 +144,6 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${{ env.multiline_file }}
+          build-args: ${{ env.MY_VARIABLE_NAME }}
           imageName:  ${{ steps.env_list_conversion.outputs.list }}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
