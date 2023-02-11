@@ -41,11 +41,7 @@ on:
         required: false
       pac:
         required: false
-env:
-  MULTILINE_VAR: |
-    line1=1
-    line2=2
-    line3=3
+
 jobs:
   build:
     runs-on: self-hosted
@@ -106,34 +102,13 @@ jobs:
           SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
           OUTPUT_PATH: '.env'
           
-      - name: Set multiline variable from file
+      - name: Set build argument variables
+        id: build_arg_var
         run: |
-          contents=$(cat .env)
-          echo "MY_VARIABLE_NAME=${contents}" >> $GITHUB_ENV
-          
-      - name: create string
-        run: |
-          MY_STRING=$(cat << EOF
-          first line
-          second line
-          third line
-          EOF
-          )
-          MY_STRING=$(cat .env)
-          echo "MY_STRING<<EOF" >> $GITHUB_ENV
-          echo "$MY_STRING" >> $GITHUB_ENV
+          BUILD_ARGS=$(cat .env)
+          echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
+          echo "$BUILD_ARGS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-        
-      - name: convert .env to new line list
-        id: env_list_conversion
-        run : |
-          multiline_file=$(cat .env) >> $GITHUB_ENV
-
-      - name: Setup Build Arg List
-        id: build_arg_list
-        run : |
-          echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`"
-
 
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
@@ -157,6 +132,5 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${{ env.MY_STRING }}
-          imageName:  ${{ steps.env_list_conversion.outputs.list }}
+          build-args: ${{ env.BUILD_ARGS }}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
