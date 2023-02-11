@@ -118,8 +118,8 @@ jobs:
       - name: Set the value in bash
         id: step_one
         run: |
-          echo 'BUILD_ARGS<<EOF' >> $GITHUB_ENV
-          cat .env >> $GITHUB_ENV
+          echo 'JSON_RESPONSE<<EOF' >> $GITHUB_ENV
+          curl https://carecru.com >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
           
       - name: Setup Build Arg List
