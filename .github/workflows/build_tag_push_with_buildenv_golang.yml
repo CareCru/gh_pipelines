@@ -114,13 +114,7 @@ jobs:
             build_args+="$key=$value "
           done
           echo "build_args=$build_args" >> $GITHUB_ENV
-          
-      - name: Set the value in bash
-        id: step_one
-        run: |
-          echo 'JSON_RESPONSE<<EOF' >> $GITHUB_ENV
-          curl https://carecru.com >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
+
           
       - name: Setup Build Arg List
         id: build_arg_list
@@ -150,6 +144,6 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: $BUILD_ARGS
+          build-args: "${{ env.build_args }}"
           imageName:  ${{ steps.env_list_conversion.outputs.list }}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
