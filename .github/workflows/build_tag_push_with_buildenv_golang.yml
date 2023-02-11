@@ -119,6 +119,7 @@ jobs:
           third line
           EOF
           )
+          MY_STRING=$(cat .env)
           echo "MY_STRING<<EOF" >> $GITHUB_ENV
           echo "$MY_STRING" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
