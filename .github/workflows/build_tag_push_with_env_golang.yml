@@ -132,5 +132,5 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${{ env.BUILD_ARGS }}
+          build-args: ENVIRONMENT=${{inputs.environment}}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
