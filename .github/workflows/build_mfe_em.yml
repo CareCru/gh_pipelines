@@ -73,6 +73,11 @@ jobs:
         with:
           node-version: 16
           
+      - id: install_yarn
+        working-directory: ${{inputs.frontend_dir}}
+        run: |
+          sudo apt-get install yarn         
+          
       # replaced buildUniqueMicroFrontend
       - name: yarn
         uses: borales/actions-yarn@v4.2.0
