@@ -76,7 +76,10 @@ jobs:
       - id: install_yarn
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          npm install --global yarn  
+          npm install --global yarn
+          yarn --version
+          node --version
+          npm --version
           
       - id: yarn_install
         working-directory: ${{inputs.frontend_dir}}
