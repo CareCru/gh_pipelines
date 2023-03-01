@@ -71,13 +71,13 @@ jobs:
       - id: setup_node
         uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 16
           
       # replaced buildUniqueMicroFrontend
       - name: yarn
         uses: borales/actions-yarn@v4.2.0
         with:
-          cmd: install --frozen-lockfile
+          cmd: install
           dir: ${{inputs.frontend_dir}}
           
       - name: yarn_build
