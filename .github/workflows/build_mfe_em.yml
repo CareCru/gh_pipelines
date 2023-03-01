@@ -76,7 +76,7 @@ jobs:
       - id: install_yarn
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          sudo apt-get install yarn         
+          npm install --global yarn         
           
       # replaced buildUniqueMicroFrontend
       - name: yarn
