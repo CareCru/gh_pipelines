@@ -80,9 +80,10 @@ jobs:
           cmd: install
           dir: ${{inputs.frontend_dir}}
           
-      - id: lsit_build_dir
+      - id: list_build_dir
         working-directory: ${{inputs.frontend_dir}}
         run: |
+          ls -l
           ls -1 ./build
           
       - name: yarn_build
