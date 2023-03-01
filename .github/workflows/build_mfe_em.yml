@@ -77,20 +77,25 @@ jobs:
       - name: yarn
         uses: borales/actions-yarn@v4.2.0
         with:
-          cmd: install --verbose
+          cmd: install 
           dir: ${{inputs.frontend_dir}}
           
       - id: list_build_dir
         working-directory: ${{inputs.frontend_dir}}
         run: |
           ls -la
-          ls -1 ./build
           
       - name: yarn_build
         uses: borales/actions-yarn@v4.2.0
         with:
           cmd: build --verbose
           dir: ${{inputs.frontend_dir}}
+
+      - id: list_build_dir2
+        working-directory: ${{inputs.frontend_dir}}
+        run: |
+          ls -la
+          ls -la ./build
 
       - id: short_sha
         name: Set Short SHA as var output
