@@ -77,7 +77,7 @@ jobs:
       - name: yarn
         uses: borales/actions-yarn@v4.2.0
         with:
-          cmd: install
+          cmd: install --frozen-lockfile
           dir: ${{inputs.frontend_dir}}
           
       - name: yarn_build
