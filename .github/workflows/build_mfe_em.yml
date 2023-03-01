@@ -85,7 +85,7 @@ jobs:
       - id: yarn_install
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          yarn install --frozen-lockfile 
+          yarn install 
 
       - id: yarn_build
         working-directory: ${{inputs.frontend_dir}}
