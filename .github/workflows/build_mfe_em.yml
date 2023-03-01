@@ -73,21 +73,23 @@ jobs:
         with:
           node-version: 14
           
-      - uses: mskelton/setup-yarn@v1
+      # replaced buildUniqueMicroFrontend
+      - name: yarn
+        uses: borales/actions-yarn@v4.2.0
         with:
-         node-version: '14'
-         
-      - id: yarn_install
-        name: yarn install
+          cmd: install
+          dir: ${{inputs.frontend_dir}}
+          
+      - id: lsit_build_dir
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          yarn install
-
-      - id: yarn_build
-        name: yarn build
-        working-directory: ${{inputs.frontend_dir}}
-        run: |
-          yarn build
+          ls -1 ./build
+          
+      - name: yarn_build
+        uses: borales/actions-yarn@v4.2.0
+        with:
+          cmd: build --verbose
+          dir: ${{inputs.frontend_dir}}
 
       - id: short_sha
         name: Set Short SHA as var output
