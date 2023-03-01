@@ -84,6 +84,8 @@ jobs:
         working-directory: ${{inputs.frontend_dir}}
         run: |
           ls -la
+          ls -la ./node_modules
+          ls -1 ./node_modules | wc -l
           
       - name: yarn_build
         uses: borales/actions-yarn@v4.2.0
