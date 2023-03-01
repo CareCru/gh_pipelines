@@ -83,21 +83,13 @@ jobs:
       - id: list_build_dir
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          ls -la
-          ls -la ./node_modules
-          ls -1 ./node_modules | wc -l
+          ls -la yarn.lock
           
       - name: yarn_build
         uses: borales/actions-yarn@v4.2.0
         with:
           cmd: build --verbose
           dir: ${{inputs.frontend_dir}}
-
-      - id: list_build_dir2
-        working-directory: ${{inputs.frontend_dir}}
-        run: |
-          ls -la
-          ls -la ./build
 
       - id: short_sha
         name: Set Short SHA as var output
