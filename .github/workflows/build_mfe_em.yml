@@ -76,20 +76,30 @@ jobs:
       - id: install_yarn
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          npm install --global yarn         
+          npm install --global yarn  
           
-      # replaced buildUniqueMicroFrontend
-      - name: yarn
-        uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: install --frozen-lockfile
-          dir: ${{inputs.frontend_dir}}
+      - id: yarn_install
+        working-directory: ${{inputs.frontend_dir}}
+        run: |
+          yarn install    
+
+      - id: yarn_build
+        working-directory: ${{inputs.frontend_dir}}
+        run: |
+          yarn build  
           
-      - name: yarn_build
-        uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: build
-          dir: ${{inputs.frontend_dir}}
+#       # replaced buildUniqueMicroFrontend
+#       - name: yarn
+#         uses: borales/actions-yarn@v4.2.0
+#         with:
+#           cmd: install --frozen-lockfile
+#           dir: ${{inputs.frontend_dir}}
+          
+#       - name: yarn_build
+#         uses: borales/actions-yarn@v4.2.0
+#         with:
+#           cmd: build
+#           dir: ${{inputs.frontend_dir}}
 
       - id: short_sha
         name: Set Short SHA as var output
