@@ -78,12 +78,6 @@ jobs:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{inputs.region}}
-          
-      - name: Setup SSH Agent
-        if: ${{ secrets.cicd_ssh_access_key }}
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.cicd_ssh_access_key }}
 
           
       - name: Read secrets from AWS Secrets Manager into environment variables
