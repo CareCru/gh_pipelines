@@ -43,7 +43,7 @@ jobs:
           if [ "$ENV" = "prod-us" ]
           then
             echo "::set-output name=region::us-west-1"
-            echo "::set-output name=cluster::prod"
+            echo "::set-output name=cluster::prod-us"
           else
             echo "::set-output name=region::ca-central-1"
             echo "::set-output name=cluster::$ENV"
