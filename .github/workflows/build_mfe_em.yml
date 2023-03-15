@@ -23,6 +23,10 @@ on:
       secret_name:
         description: AWS Secret Manger Secret Name
         type: string
+      process_env_ci:
+        description: Sets env var CI var to let build commands know this is a CI environment
+        type: boolean
+        default: true
     secrets:
       aws_access_key_id:
         required: true
@@ -42,10 +46,10 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{secrets.pac}}
-          
+
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
-        with: 
+        with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{ inputs.region }}
@@ -85,13 +89,15 @@ jobs:
         with:
           cmd: build
           dir: ${{inputs.frontend_dir}}
+        env:
+          CI: ${{inputs.process_env_ci}}
 
       - id: short_sha
         name: Set Short SHA as var output
         run: |
           echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
-          
-          
+
+
       # replaces microFrontendArtifactUpload
       - id: s3_upload_artifacts
         name: Upload artifacts to S3
