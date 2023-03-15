@@ -90,7 +90,7 @@ jobs:
           cmd: build
           dir: ${{inputs.frontend_dir}}
         env:
-          CI: ${{process_env_ci}}
+          CI: ${{inputs.process_env_ci}}
 
       - id: short_sha
         name: Set Short SHA as var output
