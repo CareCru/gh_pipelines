@@ -80,6 +80,8 @@ jobs:
         name: yarn build
         working-directory: ${{inputs.frontend_dir}}
         run: |
+          export NODE_ENV=production
+          export YARN_PRODUCTION=false
           /usr/bin/yarn install
           /usr/bin/yarn build
 
