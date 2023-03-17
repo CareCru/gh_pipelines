@@ -71,6 +71,9 @@ jobs:
           cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
           cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
           cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
+          cat .npmrc
+          cat .env
+          pwd
 
       - id: setup_node
         uses: actions/setup-node@v3
