@@ -80,7 +80,7 @@ jobs:
         name: yarn build
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          yarn install
+          yarn install --immutable
           yarn build
 
       - id: short_sha
