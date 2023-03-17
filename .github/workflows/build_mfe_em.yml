@@ -80,8 +80,8 @@ jobs:
         name: yarn build
         working-directory: ${{inputs.frontend_dir}}
         run: |
-          yarn install --immutable
-          yarn build
+          /usr/bin/yarn install
+          /usr/bin/yarn build
 
       - id: short_sha
         name: Set Short SHA as var output
