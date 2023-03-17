@@ -75,25 +75,13 @@ jobs:
           cat .env
           pwd
 
-      - id: setup_node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 14
 
-      # replaced buildUniqueMicroFrontend
-      - name: yarn
-        uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: install
-          dir: ${{inputs.frontend_dir}}
-
-      - name: yarn_build
-        uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: build
-          dir: ${{inputs.frontend_dir}}
-        env:
-          CI: ${{inputs.process_env_ci}}
+      - id: build
+        name: yarn build
+        working-directory: ${{inputs.frontend_dir}}
+        run: |
+          yarn install
+          yarn build
 
       - id: short_sha
         name: Set Short SHA as var output
