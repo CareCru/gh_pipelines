@@ -36,7 +36,7 @@ on:
         required: false
 jobs:
   build:
-    runs-on: [self-hosted, legacy]
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
         if: false == ${{inputs.submodules}}
@@ -71,19 +71,37 @@ jobs:
           cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
           cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
           cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
-          cat .npmrc
-          cat .env
-          pwd
 
+      - id: setup_node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
 
-      - id: build
-        name: yarn build
-        working-directory: ${{inputs.frontend_dir}}
-        run: |
-          export NODE_ENV=production
-          export YARN_PRODUCTION=false
-          /usr/bin/yarn install
-          /usr/bin/yarn build
+      # replaced buildUniqueMicroFrontend
+      - name: yarn
+        uses: borales/actions-yarn@v4.2.0
+        with:
+          cmd: install
+          dir: ${{inputs.frontend_dir}}
+
+      - name: yarn_build
+        uses: borales/actions-yarn@v4.2.0
+        with:
+          cmd: build
+          dir: ${{inputs.frontend_dir}}
+        env:
+          CI: ${{inputs.process_env_ci}}
+          NODE_ENV: production
+          YARN_PRODUCTION: false
+
+#       - id: build
+#         name: yarn build
+#         working-directory: ${{inputs.frontend_dir}}
+#         run: |
+#           export NODE_ENV=production
+#           export YARN_PRODUCTION=false
+#           /usr/bin/yarn install
+#           /usr/bin/yarn build
 
       - id: short_sha
         name: Set Short SHA as var output
