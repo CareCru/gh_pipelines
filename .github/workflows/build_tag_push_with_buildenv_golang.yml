@@ -133,4 +133,4 @@ jobs:
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
           build-args: ${{ env.BUILD_ARGS }}
-          tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
+          tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }},${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}
