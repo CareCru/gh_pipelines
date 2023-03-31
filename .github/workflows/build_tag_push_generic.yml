@@ -1,57 +1,74 @@
-name: Create and Publish Docker Image
+name: Build and Publish Docker Image
 
 on:
   workflow_call:
     inputs:
       image_name:
-        description: Name of container image without a tag
+        description: Name of the container image without a tag
         required: true
         type: string
       ecr_repo:
-        description: Name of ECR repo used to store container images
+        description: Name of the Amazon Elastic Container Registry repo used to store container images
         required: true
         type: string
       context:
         type: string
+        description: The context directory containing the Dockerfile
         default: "."
       dockerfile:
-        description: Dockerfile name
         type: string
+        description: The name of the Dockerfile to build
         default: "Dockerfile"
       region:
         type: string
+        description: The AWS region to use for deployment
         default: "ca-central-1"
       submodules:
         type: boolean 
+        description: Whether to checkout Git submodules
         default: false
     secrets:
       aws_access_key_id:
         required: true
+        description: The AWS access key ID with permissions to access the ECR repository
       aws_secret_access_key:
         required: true
+        description: The AWS secret access key with permissions to access the ECR repository
       cicd_ssh_access_key:
         required: false
+        description: The SSH access key for the CI/CD pipeline (if applicable)
       pac:
         required: false
+        description: The personal access token for accessing Git submodules (if applicable)
+
 jobs:
-  build:
+  build_and_push:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
         if: false == ${{inputs.submodules}}
       
-      - uses: actions/checkout@v3
+      - name: Checkout Code with Submodules
+        uses: actions/checkout@v3
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
           token: ${{secrets.pac}}
+          
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{secrets.aws_access_key_id}}
+          aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
+          aws-region: ${{inputs.region}}
 
-      - uses: aws-actions/amazon-ecr-login@v1
-        name: AWS ECR Login
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
         id: login-ecr
           
-      - name: Docker meta
+      - name: Generate Docker Image Metadata
         id: meta
         uses: docker/metadata-action@v4
         with:
@@ -63,15 +80,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha
 
-      - uses: aws-actions/configure-aws-credentials@v1
-        name: Configure AWS Credentials
-        with:
-          aws-access-key-id: ${{secrets.aws_access_key_id}}
-          aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
-          aws-region: ${{inputs.region}}
-
-          
-      - name: Read secrets from AWS Secrets Manager into environment variables
+      - name: Read Secrets from AWS Secrets Manager
         uses: say8425/aws-secrets-manager-actions@v2
         with:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
@@ -80,7 +89,7 @@ jobs:
           SECRET_NAME: build/generic/npm_tokens
           OUTPUT_PATH: '.env'
 
-      - name: Set build argument variables
+      - name: Set Build Arguments
         id: build_arg_var
         run: |
           BUILD_ARGS=$(cat .env)
