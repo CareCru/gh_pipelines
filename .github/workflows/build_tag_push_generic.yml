@@ -78,7 +78,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha
+            type=sha,prefix=,suffix=,format=short
 
       - name: Read Secrets from AWS Secrets Manager
         uses: say8425/aws-secrets-manager-actions@v2
