@@ -110,5 +110,4 @@ jobs:
           platforms: linux/amd64
           build-args: ${{ env.BUILD_ARGS }}
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
 
