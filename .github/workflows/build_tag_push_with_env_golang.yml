@@ -111,7 +111,6 @@ jobs:
         with:
           ssh: |
             default=${{ env.SSH_AUTH_SOCK }}
-          load: true
           push: true
           pull: true
           context: ${{inputs.context}}
