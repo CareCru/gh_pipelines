@@ -72,29 +72,38 @@ jobs:
           cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
           cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
 
-      - id: setup_node
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 16
 
-      # replaced buildUniqueMicroFrontend
-      - name: yarn
-        uses: borales/actions-yarn@v4.2.0
+      - name: Install dependencies with caching
+        uses: bahmutov/npm-install@v1
         with:
-          cmd: install
-          dir: ${{inputs.frontend_dir}}
-          NODE_ENV: production
-          YARN_PRODUCTION: false
+          install-command: yarn install --frozen-lockfile
+          useRollingCache: true
 
-      - name: yarn_build
-        uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: build
-          dir: ${{inputs.frontend_dir}}
-        env:
-          CI: ${{inputs.process_env_ci}}
-          NODE_ENV: production
-          YARN_PRODUCTION: false
+      - name: Build project
+        run: yarn build
+
+#       # replaced buildUniqueMicroFrontend
+#       - name: yarn
+#         uses: borales/actions-yarn@v4.2.0
+#         with:
+#           cmd: install
+#           dir: ${{inputs.frontend_dir}}
+#           NODE_ENV: production
+#           YARN_PRODUCTION: false
+
+#       - name: yarn_build
+#         uses: borales/actions-yarn@v4.2.0
+#         with:
+#           cmd: build
+#           dir: ${{inputs.frontend_dir}}
+#         env:
+#           CI: ${{inputs.process_env_ci}}
+#           NODE_ENV: production
+#           YARN_PRODUCTION: false
 
 #       - id: build
 #         name: yarn build
