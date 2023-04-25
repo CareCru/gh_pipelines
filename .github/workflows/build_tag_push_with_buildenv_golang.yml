@@ -93,23 +93,6 @@ jobs:
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{inputs.region}}
 
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: say8425/aws-secrets-manager-actions@v2
-        with:
-          AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
-          AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
-          OUTPUT_PATH: '.env'
-          
-      - name: Set build argument variables
-        id: build_arg_var
-        run: |
-          BUILD_ARGS=$(cat .env)
-          echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
-          echo "$BUILD_ARGS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
 
@@ -132,5 +115,5 @@ jobs:
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${{ env.BUILD_ARGS }}
+          build-args: ENVIRONMENT=${{inputs.environment}}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }},${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}
