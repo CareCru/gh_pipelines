@@ -83,7 +83,7 @@ jobs:
       - name: Install dependencies with caching
         uses: bahmutov/npm-install@v1
         with:
-          install-command: yarn install --frozen-lockfile
+          install-command: yarn install 
           useRollingCache: true
           working-directory: web/enterprise-management/
 
