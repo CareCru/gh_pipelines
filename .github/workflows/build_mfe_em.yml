@@ -85,9 +85,11 @@ jobs:
         with:
           install-command: yarn install --frozen-lockfile
           useRollingCache: true
+          working-directory: web/enterprise-management/
 
       - name: Build project
         run: yarn build
+        working-directory: web/enterprise-management/
 
 #       # replaced buildUniqueMicroFrontend
 #       - name: yarn
