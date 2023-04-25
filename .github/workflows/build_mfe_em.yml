@@ -85,48 +85,26 @@ jobs:
         with:
           install-command: yarn install 
           useRollingCache: true
-          working-directory: web/enterprise-management/
+          working-directory: ${{inputs.frontend_dir}}
         env:
           NODE_ENV: development
           
       - name: Build project
         run: yarn build
-        working-directory: web/enterprise-management/
-
-#       # replaced buildUniqueMicroFrontend
-#       - name: yarn
-#         uses: borales/actions-yarn@v4.2.0
-#         with:
-#           cmd: install
-#           dir: ${{inputs.frontend_dir}}
-#           NODE_ENV: production
-#           YARN_PRODUCTION: false
-
-#       - name: yarn_build
-#         uses: borales/actions-yarn@v4.2.0
-#         with:
-#           cmd: build
-#           dir: ${{inputs.frontend_dir}}
-#         env:
-#           CI: ${{inputs.process_env_ci}}
-#           NODE_ENV: production
-#           YARN_PRODUCTION: false
-
-#       - id: build
-#         name: yarn build
-#         working-directory: ${{inputs.frontend_dir}}
-#         run: |
-#           export NODE_ENV=production
-#           export YARN_PRODUCTION=false
-#           /usr/bin/yarn install
-#           /usr/bin/yarn build
+        working-directory: ${{inputs.frontend_dir}}
 
       - id: short_sha
         name: Set Short SHA as var output
         run: |
           echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
 
-
+      # Step needed for downloading current task def.
+      - name: Install AWS CLI Tools
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          
       # replaces microFrontendArtifactUpload
       - id: s3_upload_artifacts
         name: Upload artifacts to S3
