@@ -81,13 +81,13 @@ jobs:
         name: AWS ECR Login
         id: login-ecr
         
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: say8425/aws-secrets-manager-actions@v2
+      - name: Read Secrets from AWS Secrets Manager
+        uses: say8425/aws-secrets-manager-actions@v2.2.1
         with:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
           AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
+          SECRET_NAME: build/generic/npm_tokens
           OUTPUT_PATH: '.env'
           
       - name: Extract ticket from branch name
