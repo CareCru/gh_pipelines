@@ -86,7 +86,9 @@ jobs:
           install-command: yarn install 
           useRollingCache: true
           working-directory: web/enterprise-management/
-
+        env:
+          NODE_ENV: development
+          
       - name: Build project
         run: yarn build
         working-directory: web/enterprise-management/
