@@ -130,4 +130,4 @@ jobs:
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
           build-args: ENVIRONMENT=${{inputs.environment}}
-          tags: 
+          tags: ${{ steps.meta.outputs.tags }}
