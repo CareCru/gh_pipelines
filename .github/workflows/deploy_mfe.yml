@@ -54,9 +54,9 @@ jobs:
         run: |
           if [ -z "${{ inputs.tag }}" ]
           then
-            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-            aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --delete
+            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+            aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}.carecru.com --delete
           else
-            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-            aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --delete
+            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+            aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}.carecru.com --delete
           fi
