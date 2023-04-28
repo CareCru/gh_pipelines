@@ -35,10 +35,10 @@ jobs:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{ inputs.region }}
-          
+
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
-        with: 
+        with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{ steps.set_region.outputs.region }}
@@ -47,23 +47,23 @@ jobs:
         name: Set Short SHA as var output
         run: |
           echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
-          
+
       # Step needed for downloading current task def.
       - name: Install AWS CLI Tools
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install
-          
+
       # replaces deployStaticMicroFrontend
       - id: deploy_s3_artifacts
         name: Deploy S3 artifacts
         run: |
           if [ -z "${{ inputs.tag }}" ]
           then
-            aws s3 cp s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{service_name}}-frontend.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-            aws s3 sync s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{service_name}}-frontend.carecru.com --delete
+            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+            aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --delete
           else
-            aws s3 cp s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{service_name}}-frontend.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-            aws s3 sync s3://micro-frontend-artifacts/${{service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{service_name}}-frontend.carecru.com --delete
+            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+            aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --delete
           fi
