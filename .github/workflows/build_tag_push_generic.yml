@@ -87,7 +87,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,prefix=v,pattern={{major}}.{{minor}}
             type=sha,prefix=,suffix=,format=short
 
       - name: Read Secrets from AWS Secrets Manager
