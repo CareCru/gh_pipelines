@@ -109,6 +109,7 @@ jobs:
             type=ref,event=pr,prefix=${{inputs.environment}}-
             type=semver,pattern={{version}},prefix=${{inputs.environment}}-
             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
+            type=ref,event=tag,prefix=${{inputs.environment}}-
             type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
             
       - name: Set Build Arguments
