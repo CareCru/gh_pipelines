@@ -97,20 +97,48 @@ jobs:
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
           echo "::set-output name=ticket::$TICKET"
 
+      - name: Get short SHA of HEAD commit
+        run: echo "HEAD_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Get short SHA of upcoming merge commit
+        id: merge_base
+        run: |
+          # The short SHA of the merge commit can be calculated in advance because it's deterministic.
+          MERGE_BASE=$(git merge-base HEAD ${{ github.event.pull_request.base.ref }})
+          echo "MERGE_BASE_SHORT_SHA=$(git rev-parse --short $MERGE_BASE)" >> $GITHUB_ENV
+
       - name: Generate Docker Image Metadata
         id: meta
         uses: docker/metadata-action@v4.3.0
         with:
-          images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.image_name }}
           tags: |
-            type=raw,value=pr-${{ github.event.number }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
-            type=raw,value=${{ steps.extract_ticket.outputs.ticket }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
-            type=ref,event=branch,prefix=${{inputs.environment}}-
-            type=ref,event=pr,prefix=${{inputs.environment}}-
-            type=semver,pattern={{version}},prefix=${{inputs.environment}}-
-            type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
-            type=ref,event=tag,prefix=${{inputs.environment}}-
-            type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
+            type=raw,value=pr-${{ github.event.number }},enable=${{ github.event_name == 'pull_request' }},prefix=${{ inputs.environment }}-
+            type=raw,value=${{ steps.extract_ticket.outputs.ticket }},enable=${{ github.event_name == 'pull_request' }},prefix=${{ inputs.environment }}-
+            type=raw,value=${{ env.HEAD_SHORT_SHA }},enable=${{ github.event_name == 'pull_request' }},prefix=${{ inputs.environment }}-
+            type=raw,value=${{ env.MERGE_BASE_SHORT_SHA }},enable=${{ github.event_name == 'pull_request' }},prefix=${{ inputs.environment }}-
+            type=ref,event=branch,prefix=${{ inputs.environment }}-
+            type=ref,event=pr,prefix=${{ inputs.environment }}-
+            type=semver,pattern={{version}},prefix=${{ inputs.environment }}-
+            type=semver,pattern={{major}}.{{minor}},prefix=${{ inputs.environment }}-
+            type=ref,event=tag,prefix=${{ inputs.environment }}-
+            type=sha,prefix=${{ inputs.environment }}-,suffix=,format=short
+
+
+#       - name: Generate Docker Image Metadata
+#         id: meta
+#         uses: docker/metadata-action@v4.3.0
+#         with:
+#           images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+#           tags: |
+#             type=raw,value=pr-${{ github.event.number }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
+#             type=raw,value=${{ steps.extract_ticket.outputs.ticket }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
+#             type=ref,event=branch,prefix=${{inputs.environment}}-
+#             type=ref,event=pr,prefix=${{inputs.environment}}-
+#             type=semver,pattern={{version}},prefix=${{inputs.environment}}-
+#             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
+#             type=ref,event=tag,prefix=${{inputs.environment}}-
+#             type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
             
       - name: Set Build Arguments
         id: build_arg_var
