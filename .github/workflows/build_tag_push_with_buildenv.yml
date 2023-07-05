@@ -108,8 +108,16 @@ jobs:
         id: merge_base
         run: |
           # The short SHA of the merge commit can be calculated in advance because it's deterministic.
-          MERGE_BASE=$(git merge-base HEAD ${{ github.event.pull_request.base.ref }})
+          git fetch origin main:main
+          git branch # debug: list all local branches
+          git log --oneline main # debug: print recent commits in main
+          MERGE_BASE=$(git merge-base HEAD main)
+          if [ -z "$MERGE_BASE" ]; then
+            echo "Error: Could not determine merge base of HEAD and main"
+            exit 1
+          fi
           echo "MERGE_BASE_SHORT_SHA=$(git rev-parse --short $MERGE_BASE)" >> $GITHUB_ENV
+
 
       - name: Generate Docker Image Metadata
         id: meta
