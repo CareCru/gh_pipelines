@@ -96,6 +96,10 @@ jobs:
           BRANCH_NAME=${{ github.head_ref }}
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
           echo "::set-output name=ticket::$TICKET"
+          
+      - name: Fetch main branch
+        run: |
+          git fetch origin main:main
 
       - name: Get short SHA of HEAD commit
         run: echo "HEAD_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
