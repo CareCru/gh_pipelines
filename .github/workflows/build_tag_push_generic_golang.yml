@@ -41,7 +41,6 @@ on:
         required: false
       pac:
         required: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -56,27 +55,6 @@ jobs:
           submodules: 'recursive'
           token: ${{secrets.pac}}
 
-      - id: var_set_outputs
-        name: Set output values
-        run: |
-          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"
-          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"
-          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"
-          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"
-          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"
-          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
-
-      - id: var_read_outputs
-        name: Display output values
-        run: |
-          echo user_tag: ${{ steps.user_branch_tag.outputs.user_tag }}
-          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}
-          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}
-          echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
-          echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
-          echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
-          echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
-
       - id: short_sha
         name: Set short SHA
         run: |
@@ -85,24 +63,52 @@ jobs:
       - uses: webfactory/ssh-agent@v0.7.0
         with:
             ssh-private-key: ${{ secrets.cicd_ssh_access_key }}  
-            
+          
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
         with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{inputs.region}}
+          
+      - name: Setup BuildX
+        uses: docker/setup-buildx-action@v1
 
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: say8425/aws-secrets-manager-actions@v2
+      - uses: aws-actions/amazon-ecr-login@v1
+        name: AWS ECR Login
+        id: login-ecr
+        
+      - name: Read Secrets from AWS Secrets Manager
+        uses: say8425/aws-secrets-manager-actions@v2.2.1
         with:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
           AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
+          SECRET_NAME: build/generic/npm_tokens
           OUTPUT_PATH: '.env'
           
-      - name: Set build argument variables
+      - name: Extract ticket from branch name
+        id: extract_ticket
+        run: |
+          BRANCH_NAME=${{ github.head_ref }}
+          TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
+          echo "::set-output name=ticket::$TICKET"
+
+      - name: Generate Docker Image Metadata
+        id: meta
+        uses: docker/metadata-action@v4.3.0
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+          tags: |
+            type=raw,value=pr-${{ github.event.number }},enable=${{ github.event_name == 'pull_request' }}
+            type=raw,value=${{ steps.extract_ticket.outputs.ticket }},enable=${{ github.event_name == 'pull_request' }}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=,suffix=,format=short
+            
+      - name: Set Build Arguments
         id: build_arg_var
         run: |
           BUILD_ARGS=$(cat .env)
@@ -110,27 +116,18 @@ jobs:
           echo "$BUILD_ARGS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Setup BuildX
-        uses: docker/setup-buildx-action@v1
-
-      - uses: aws-actions/amazon-ecr-login@v1
-        name: AWS ECR Login
-        id: login-ecr
-
-      - name: Verify Image
-        id: verify_image
-        run : |
-          echo "::set-output name=exists::`docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?`"
-          
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           ssh: |
             default=${{ env.SSH_AUTH_SOCK }}
-          load: true
+          push: true
+          pull: true
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
           build-args: ${{ env.BUILD_ARGS }}
-          tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }},${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

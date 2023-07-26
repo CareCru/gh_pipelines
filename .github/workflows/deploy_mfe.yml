@@ -27,7 +27,7 @@ on:
         required: false
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
