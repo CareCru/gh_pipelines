@@ -87,8 +87,6 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: ${{inputs.frontend_dir}}/yarn.lock
 
-      - uses: c-hive/gha-yarn-cache@v2
-
       - name: yarn
         uses: borales/actions-yarn@v4.2.0
         with:
