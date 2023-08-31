@@ -59,6 +59,6 @@ jobs:
             aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --delete
           else
             echo "TAG is ${{inputs.tag}}"
-            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+            aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --recursive --metadata commit=${{inputs.tag}}
             aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{inputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}-frontend.carecru.com --delete
           fi
