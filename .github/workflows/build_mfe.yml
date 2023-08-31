@@ -77,17 +77,13 @@ jobs:
         with:
           node-version: 14
 
-      # replaced buildUniqueMicroFrontend
-      # - name: yarn
-      #   uses: borales/actions-yarn@v4.2.0
-      #   with:
-      #     cmd: install
-      #     dir: ${{inputs.frontend_dir}}
+      - uses: c-hive/gha-yarn-cache@v2
 
       - name: yarn
-        uses: bahmutov/npm-install@v1
+        uses: borales/actions-yarn@v4.2.0
         with:
-          working-directory: ${{inputs.frontend_dir}}
+          cmd: install
+          dir: ${{inputs.frontend_dir}}
             
       - name: yarn_build
         uses: borales/actions-yarn@v4.2.0
