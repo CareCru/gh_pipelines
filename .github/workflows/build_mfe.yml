@@ -78,12 +78,17 @@ jobs:
           node-version: 14
 
       # replaced buildUniqueMicroFrontend
-      - name: yarn
-        uses: borales/actions-yarn@v4.2.0
-        with:
-          cmd: install
-          dir: ${{inputs.frontend_dir}}
+      # - name: yarn
+      #   uses: borales/actions-yarn@v4.2.0
+      #   with:
+      #     cmd: install
+      #     dir: ${{inputs.frontend_dir}}
 
+      - name: yarn
+        uses: bahmutov/npm-install@v1
+        with:
+          working-directory: ${{inputs.frontend_dir}}
+            
       - name: yarn_build
         uses: borales/actions-yarn@v4.2.0
         with:
@@ -91,6 +96,7 @@ jobs:
           dir: ${{inputs.frontend_dir}}
         env:
           CI: ${{inputs.process_env_ci}}
+
 
       - id: short_sha
         name: Set Short SHA as var output
