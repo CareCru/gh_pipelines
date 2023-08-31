@@ -85,7 +85,7 @@ jobs:
         with:
           node-version: 14
           cache: 'yarn'
-
+          cache-dependency-path: ${{inputs.frontend_dir}}/yarn.lock
       - name: yarn
         uses: borales/actions-yarn@v4.2.0
         with:
