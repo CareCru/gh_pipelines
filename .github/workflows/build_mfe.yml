@@ -72,6 +72,13 @@ jobs:
           cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
           cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
 
+      - name: Install Yarn
+        run: |
+          curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+          echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+          apt-get update
+          apt-get install -y yarn
+
       - id: setup_node
         uses: actions/setup-node@v3
         with:
