@@ -14,6 +14,9 @@ on:
       region:
         type: string
         default: "ca-central-1"
+      node_ver:
+        type: string
+        default: 14
       submodules:
         type: boolean
         default: false
@@ -83,7 +86,7 @@ jobs:
       - id: setup_node
         uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: ${{inputs.node_ver}}
           cache: 'yarn'
           cache-dependency-path: ${{inputs.frontend_dir}}/yarn.lock
 
