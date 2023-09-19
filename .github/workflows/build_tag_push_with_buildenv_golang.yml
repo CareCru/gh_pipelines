@@ -112,6 +112,7 @@ jobs:
             type=ref,event=pr,prefix=${{inputs.environment}}-
             type=semver,pattern={{version}},prefix=${{inputs.environment}}-
             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
+            type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-v
             type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
             
       - name: Verify Image
