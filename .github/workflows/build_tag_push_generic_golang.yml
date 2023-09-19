@@ -105,8 +105,8 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,suffix=,format=short
+            type=semver,prefix=v,pattern={{major}}.{{minor}}
+            type=sha,prefix=,suffix=,format=short
             
       - name: Set Build Arguments
         id: build_arg_var
