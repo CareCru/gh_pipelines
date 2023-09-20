@@ -133,8 +133,34 @@ jobs:
       - name: Register AWS ECS Task Definition
         id: reg_tsk_def
         run: |
-          echo "::set-output name=task_revision::`aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }} --output json | jq .taskDefinition.revision`"
-          
+          max_retries=10
+          wait_seconds=30
+          counter=0
+          task_revision=""
+      
+          while [ $counter -le $max_retries ]
+          do
+            # Attempt to register the task definition and capture the task revision.
+            task_revision=$(aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }} --output json | jq .taskDefinition.revision)
+      
+            # Check if the command was successful.
+            if [ $? -eq 0 ]; then
+              echo "Task definition registered successfully. Task revision: $task_revision"
+              echo "::set-output name=task_revision::$task_revision"
+              break
+            else
+              echo "Failed to register task definition. Attempt $((counter + 1))/$max_retries."
+              sleep $wait_seconds
+            fi
+      
+            counter=$((counter + 1))
+      
+            if [ $counter -gt $max_retries ]; then
+              echo "Max retries reached. Exiting..."
+              exit 1
+            fi
+          done
+
       - name: Check Image Availability in ECR
         run: |
           # Initialize a counter
