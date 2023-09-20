@@ -143,16 +143,30 @@ jobs:
           # Max number of retries
           max_retries=20
           
+          # Decide which tag to look for based on input
+          if [ -z "${{ inputs.tag }}" ]; then
+            image_tag=${{ steps.short_sha.outputs.tag }}
+          else
+            image_tag=${{ inputs.tag }}
+          fi
+          
+          echo "Looking for image with tag $image_tag in ${{ inputs.ecr_repo }}."
+          
           # Loop to check image availability
           while [ $counter -le $max_retries ]
           do
-            exists=$(aws ecr list-images --repository-name ${{ inputs.ecr_repo }} --filter "tagStatus=TAGGED" --query 'imageIds[?imageTag==`'${{ steps.image-name.outputs.image }}'`]' --output text)
+            exists=$(aws ecr list-images --repository-name ${{ inputs.ecr_repo }} --filter "tagStatus=TAGGED" --query "imageIds[?imageTag=='$image_tag']" --output text)
+            
+            if [ $? -ne 0 ]; then
+              echo "Error running aws ecr list-images command. Exiting..."
+              exit 1
+            fi
             
             if [ -n "$exists" ]; then
               echo "Image exists in ECR repository. Proceeding..."
               break
             else
-              echo "Image does not exist in ECR repository. Waiting for 30 seconds before retrying..."
+              echo "Image with tag $image_tag does not exist in ECR repository ${{ inputs.ecr_repo }}. Attempt $((counter + 1))/$max_retries. Waiting for 30 seconds before retrying..."
               sleep 30
             fi
             
@@ -163,6 +177,7 @@ jobs:
               exit 1
             fi
           done
+
 
       - name: Execute AWS ECS Task Definition
         id: run_tsk_def
