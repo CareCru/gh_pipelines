@@ -134,6 +134,35 @@ jobs:
         id: reg_tsk_def
         run: |
           echo "::set-output name=task_revision::`aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }} --output json | jq .taskDefinition.revision`"
+          
+      - name: Check Image Availability in ECR
+        run: |
+          # Initialize a counter
+          counter=0
+          
+          # Max number of retries
+          max_retries=20
+          
+          # Loop to check image availability
+          while [ $counter -le $max_retries ]
+          do
+            exists=$(aws ecr list-images --repository-name ${{ inputs.ecr_repo }} --filter "tagStatus=TAGGED" --query 'imageIds[?imageTag==`'${{ steps.image-name.outputs.image }}'`]' --output text)
+            
+            if [ -n "$exists" ]; then
+              echo "Image exists in ECR repository. Proceeding..."
+              break
+            else
+              echo "Image does not exist in ECR repository. Waiting for 30 seconds before retrying..."
+              sleep 30
+            fi
+            
+            counter=$((counter+1))
+            
+            if [ $counter -ge $max_retries ]; then
+              echo "Max retries reached. Exiting..."
+              exit 1
+            fi
+          done
 
       - name: Execute AWS ECS Task Definition
         id: run_tsk_def
