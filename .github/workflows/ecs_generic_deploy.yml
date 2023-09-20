@@ -131,14 +131,22 @@ jobs:
           task-definition: task_def.json
           container-name: ${{inputs.environment}}-${{inputs.app_name}}
           image: ${{ steps.image-name.outputs.image }}
-
+          
       - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: schmod/amazon-ecs-deploy-task-definition@automatic-retry
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{inputs.environment}}-${{inputs.app_name}}
           cluster: ${{ steps.set_region.outputs.cluster }}-ecs-cluster
           wait-for-service-stability: true
+          
+      # - name: Deploy Amazon ECS task definition
+      #   uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      #   with:
+      #     task-definition: ${{ steps.task-def.outputs.task-definition }}
+      #     service: ${{inputs.environment}}-${{inputs.app_name}}
+      #     cluster: ${{ steps.set_region.outputs.cluster }}-ecs-cluster
+      #     wait-for-service-stability: true
           
       - name: Task Def Cleaner
         uses: ScrumWorks/github-actions-aws-task-cleaner@v1
