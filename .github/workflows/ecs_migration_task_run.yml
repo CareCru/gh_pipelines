@@ -92,7 +92,7 @@ jobs:
         id: image-name
         env:
           ECR_REGISTRY: ${{ inputs.ecr_registry }}
-          ECR_REPOSITORY: ${{inputs.app_name}}
+          ECR_REPOSITORY: ${{inputs.ecr_repo}}
         run: |
           if [ -z "${{ inputs.tag }}" ]
           then
