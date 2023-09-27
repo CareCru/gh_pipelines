@@ -80,7 +80,7 @@ jobs:
 
       - name: Generate Docker Image Metadata
         id: meta
-        uses: docker/metadata-action@v4.3.0
+        uses: docker/metadata-action@v5.0.0
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
           tags: |
