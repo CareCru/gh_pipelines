@@ -77,6 +77,9 @@ jobs:
           BRANCH_NAME=${{ github.head_ref }}
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
           echo "::set-output name=ticket::$TICKET"
+          
+      - name: List all refs
+        run: git show-ref
 
       - name: Generate Docker Image Metadata
         id: meta
