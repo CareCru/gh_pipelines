@@ -78,8 +78,19 @@ jobs:
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
           echo "::set-output name=ticket::$TICKET"
           
-      - name: List all refs
-        run: git show-ref
+      - name: Show GitHub Environment Variables for Debugging
+        run: |
+          echo "GITHUB_REF: ${{ env.GITHUB_REF }}"
+          echo "GITHUB_SHA: ${{ env.GITHUB_SHA }}"
+          echo "GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}"
+          echo "GITHUB_RUN_ID: ${{ env.GITHUB_RUN_ID }}"
+          echo "GITHUB_RUN_NUMBER: ${{ env.GITHUB_RUN_NUMBER }}"
+          echo "GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}"
+          echo "GITHUB_WORKSPACE: ${{ env.GITHUB_WORKSPACE }}"
+          echo "GITHUB_EVENT_NAME: ${{ env.GITHUB_EVENT_NAME }}"
+          echo "GITHUB_EVENT_PATH: ${{ env.GITHUB_EVENT_PATH }}"
+          echo "GITHUB_WORKFLOW: ${{ env.GITHUB_WORKFLOW }}"
+
 
       - name: Generate Docker Image Metadata
         id: meta
