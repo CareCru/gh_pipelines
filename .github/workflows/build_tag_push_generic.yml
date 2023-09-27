@@ -78,18 +78,25 @@ jobs:
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
           echo "::set-output name=ticket::$TICKET"
           
-      - name: Show GitHub Environment Variables for Debugging
+      - id: var_set_outputs
+        name: Set output values
         run: |
-          echo "GITHUB_REF: ${{ env.GITHUB_REF }}"
-          echo "GITHUB_SHA: ${{ env.GITHUB_SHA }}"
-          echo "GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}"
-          echo "GITHUB_RUN_ID: ${{ env.GITHUB_RUN_ID }}"
-          echo "GITHUB_RUN_NUMBER: ${{ env.GITHUB_RUN_NUMBER }}"
-          echo "GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}"
-          echo "GITHUB_WORKSPACE: ${{ env.GITHUB_WORKSPACE }}"
-          echo "GITHUB_EVENT_NAME: ${{ env.GITHUB_EVENT_NAME }}"
-          echo "GITHUB_EVENT_PATH: ${{ env.GITHUB_EVENT_PATH }}"
-          echo "GITHUB_WORKFLOW: ${{ env.GITHUB_WORKFLOW }}"
+          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
+          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
+          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"          
+          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"          
+          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"          
+          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
+          
+      - id: var_read_outputs
+        name: display output values
+        run: |
+          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
+          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}      
+          echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
+          echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
+          echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
+          echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
 
 
       - name: Generate Docker Image Metadata
