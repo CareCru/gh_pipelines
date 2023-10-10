@@ -114,7 +114,10 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-v
             type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
-            
+            type=sha,prefix=${{inputs.environment}},suffix=,format=short
+            type=sha,prefix=${{inputs.environment}}_,suffix=,format=short
+
+
       - name: Verify Image
         id: verify_image
         run : |
