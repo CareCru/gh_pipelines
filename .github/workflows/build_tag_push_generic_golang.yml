@@ -105,6 +105,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
+            type=semver,prefix=v,pattern={{version}}
             type=semver,prefix=v,pattern={{major}}.{{minor}}
             type=sha,prefix=,suffix=,format=short
             
