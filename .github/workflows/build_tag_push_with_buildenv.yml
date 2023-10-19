@@ -115,6 +115,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},prefix=${{ inputs.environment }}-
             type=ref,event=tag,prefix=${{ inputs.environment }}-
             type=sha,prefix=${{ inputs.environment }}-,suffix=,format=short
+            type=semver,prefix=${{ inputs.environment }}-v,pattern={{version}}
 
 
 #       - name: Generate Docker Image Metadata
