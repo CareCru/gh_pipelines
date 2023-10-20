@@ -130,5 +130,4 @@ jobs:
           platforms: linux/amd64
           build-args: ${{ env.BUILD_ARGS }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+
