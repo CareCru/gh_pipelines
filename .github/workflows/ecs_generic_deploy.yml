@@ -128,7 +128,7 @@ jobs:
             # Use AWS CLI to check if image with the tag exists
             IMAGES=$(aws ecr list-images --repository-name $ECR_REPOSITORY --region ca-central-1)
             
-            if echo "$IMAGES" | grep -q "$TAG_NAME"; then
+            if [[ $IMAGES == *"$TAG_NAME"* ]]; then
               echo "$TIMESTAMP: Image with tag $TAG_NAME found!"
               exit 0
             fi
