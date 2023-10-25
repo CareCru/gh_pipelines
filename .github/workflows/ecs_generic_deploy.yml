@@ -112,7 +112,6 @@ jobs:
           
       - name: Check if Image Exists
         env:
-          AWS_REGION: 'ca-central-1'
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           ECR_REPOSITORY: ${{inputs.ecr_repo}}
@@ -126,7 +125,7 @@ jobs:
             echo "$TIMESTAMP: Checking for image with tag $TAG_NAME in repository..."
             
             # Use AWS CLI to check if image with the tag exists
-            IMAGES=$(aws ecr list-images --repository-name $ECR_REPOSITORY --region $AWS_REGION)
+            IMAGES=$(aws ecr list-images --repository-name $ECR_REPOSITORY --region ca-central-1)
             
             if echo "$IMAGES" | grep -q "$TAG_NAME"; then
               echo "$TIMESTAMP: Image with tag $TAG_NAME found!"
