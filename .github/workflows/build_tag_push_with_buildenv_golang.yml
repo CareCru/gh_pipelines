@@ -111,6 +111,7 @@ jobs:
             type=ref,event=branch,prefix=${{inputs.environment}}-
             type=ref,event=pr,prefix=${{inputs.environment}}-
             type=semver,pattern={{version}},prefix=${{inputs.environment}}-
+            type=semver,pattern={{version}},prefix=${{inputs.environment}}-v
             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-v
             type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
