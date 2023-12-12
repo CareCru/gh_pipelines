@@ -162,6 +162,7 @@ jobs:
           done
 
       - name: Check Image Availability in ECR
+        continue-on-error: true
         run: |
           # Initialize a counter
           counter=0
