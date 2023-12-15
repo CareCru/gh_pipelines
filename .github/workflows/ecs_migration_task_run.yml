@@ -182,7 +182,7 @@ jobs:
           # Loop to check image availability
           while [ $counter -le $max_retries ]
           do
-            exists=$(aws ecr list-images --repository-name ${{ inputs.ecr_repo }} --filter "tagStatus=TAGGED" --query "imageIds[?imageTag=='$image_tag']" --output text)
+            exists=$(aws ecr list-images --region ca-central-1 --repository-name ${{ inputs.ecr_repo }} --filter "tagStatus=TAGGED" --query "imageIds[?imageTag=='$image_tag']" --output text)
             
             if [ $? -ne 0 ]; then
               echo "Error running aws ecr list-images command. Exiting..."
