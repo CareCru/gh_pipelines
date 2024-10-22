@@ -74,8 +74,9 @@ jobs:
       - name: Extract ticket from branch name
         id: extract_ticket
         run: |
-          BRANCH_NAME=${{ github.head_ref }}
-          TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
+          #BRANCH_NAME=${{ github.head_ref }}
+          #TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
+          TICKET=${{ github.head_ref }}
           echo "::set-output name=ticket::$TICKET"
           
       - id: var_set_outputs
