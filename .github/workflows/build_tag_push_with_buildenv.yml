@@ -46,10 +46,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: false == ${{inputs.submodules}}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
