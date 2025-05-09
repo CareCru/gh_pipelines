@@ -13,11 +13,11 @@ on:
   workflow_call:
     inputs:
       service_name:
-        description: Name of the service (S3 prefix)
+        description: Name of the service 
         required: true
         type: string
       environment:
-        description: Name of environment (e.g. dev|stage|prod)
+        description: Name of environment (e.g. dev|test|prod|prod-us)
         required: true
         type: string
       region:
