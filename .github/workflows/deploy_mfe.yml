@@ -33,28 +33,72 @@ jobs:
   build:
     runs-on: self-hosted
     steps:
+      # ➊ AWS creds
       - uses: aws-actions/configure-aws-credentials@v1
-        name: Configure AWS Credentials
         with:
-          aws-access-key-id: ${{secrets.aws_access_key_id}}
-          aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
-          aws-region: ${{ inputs.region }}
+          aws-access-key-id:     ${{ secrets.aws_access_key_id }}
+          aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+          aws-region:            ${{ inputs.region }}
 
-      - id: short_sha
-        name: Set Short SHA as var output
+      # ➋ Compute TAG  (version > short SHA)
+      - id: compute_tag
+        name: Decide which TAG to deploy
+        shell: bash
         run: |
-          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="$(echo ${GITHUB_SHA} | cut -c1-8)"
+          fi
+          echo "TAG=$TAG"
+          echo "::set-output name=tag::$TAG"
 
-      # Step needed for downloading current task def.
-      - name: Install AWS CLI Tools
+      # ➌ Install AWS CLI
+      - name: Install AWS CLI
         run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
+          curl -sSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
+          unzip -qq awscliv2.zip
           sudo ./aws/install
 
-      # replaces deployStaticMicroFrontend
-      - id: deploy_s3_artifacts
-        name: Deploy S3 artifacts
+      # ➍ ONE step: copy + invalidate
+      - name: Copy bundle ➜ S3 and invalidate CloudFront
+        id: publish_mfe
+        shell: bash
+        env:
+          CF_MAP: |
+            dev-workflow-frontend=E29LW80C7E8SEB
+            test-workflow-frontend=E3LQRSKLJNNHCD
+            prod-workflow-frontend=E1GH6BQFRDMXLH
+            prod-us-workflow-frontend=E2GASSQAS321OR
+            dev-dashboard-frontend=E1SXJUF1QF8QBK
+            test-dashboard-frontend=E1OY8RVFQZV6DW
+            prod-dashboard-frontend=EIO1DJ3H8Z62T
+            prod-us-dashboard-frontend=E3S5QPH6IXLSZF
+            # … add the rest once
         run: |
-          aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}${{inputs.domain}} --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-          aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}${{inputs.domain}} --delete
+          set -euo pipefail
+
+          TAG="${{ steps.compute_tag.outputs.tag }}"
+          SERVICE="${{ inputs.service_name }}"
+          ENV="${{ inputs.environment }}"
+          DOMAIN="${{ inputs.domain }}"
+          SRC="s3://micro-frontend-artifacts/${SERVICE}/${ENV}/${TAG}"
+          DEST_BUCKET="${ENV}-${SERVICE}${DOMAIN}"
+          DEST="s3://${DEST_BUCKET}"
+
+          echo "▶ Copying ${SRC} ➜ ${DEST}"
+          aws s3 cp   "$SRC" "$DEST" --recursive --metadata commit=$TAG
+          aws s3 sync "$SRC" "$DEST" --delete
+
+          KEY="${ENV}-${SERVICE}"
+          CF_DIST_ID=$(echo "$CF_MAP" | grep "^${KEY}=" | cut -d= -f2)
+
+          if [[ -z "$CF_DIST_ID" ]]; then
+            echo "::warning ::No CloudFront distribution mapped for $KEY – skipping invalidation."
+            exit 0
+          fi
+
+          echo "▶ Invalidating CloudFront distribution $CF_DIST_ID for /*"
+          aws cloudfront create-invalidation \
+            --distribution-id "$CF_DIST_ID" \
+            --paths "/*"
