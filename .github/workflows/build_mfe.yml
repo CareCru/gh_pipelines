@@ -53,6 +53,7 @@ on:
 
 jobs:
   build:
+    if: ${{ inputs.tag != 'SKIP_BUILD' }}
     runs-on: self-hosted
 
     steps:
