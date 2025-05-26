@@ -20,6 +20,10 @@ on:
         description: Name of environment (e.g. dev|test|prod|prod-us)
         required: true
         type: string
+      tag:
+        description: "Optional version tag to use for S3 artifact upload (e.g., v1.2.3)"
+        required: false
+        type: string
       region:
         type: string
         default: "ca-central-1"
@@ -49,6 +53,7 @@ on:
 
 jobs:
   build:
+    if: ${{ inputs.tag != 'SKIP_BUILD' }}
     runs-on: self-hosted
 
     steps:
@@ -185,11 +190,12 @@ jobs:
 
     # ──────────────────────────── Upload by version tag (if any) ──────────────
     - id: s3_upload_release
-      name: Upload artifacts (release version)
-      if: steps.detect_release.outputs.is_release == 'true'
+      name: Upload artifacts (release version from input tag if provided)
+      if: ${{ inputs.tag != '' }}
       working-directory: ${{ inputs.frontend_dir }}/build
       shell: bash
       run: |
+        echo "Attempting to upload release version using input tag: ${{ inputs.tag }}"
         aws s3 cp . \
-          "s3://micro-frontend-artifacts/${{ inputs.service_name }}/${{ inputs.environment }}/${{ steps.detect_release.outputs.version }}" \
-          --recursive --metadata release=${{ steps.detect_release.outputs.version }}
+          "s3://micro-frontend-artifacts/${{ inputs.service_name }}/${{ inputs.environment }}/${{ inputs.tag }}" \
+          --recursive --metadata release=${{ inputs.tag }}
