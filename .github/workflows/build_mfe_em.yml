@@ -23,6 +23,10 @@ on:
       secret_name:
         description: AWS Secret Manger Secret Name
         type: string
+      tag:
+        description: "Optional version tag to use for S3 artifact upload (e.g., v1.2.3)"
+        required: false
+        type: string
       process_env_ci:
         description: Sets env var CI var to let build commands know this is a CI environment
         type: boolean
@@ -46,6 +50,43 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{secrets.pac}}
+
+      # ──────────────────────────── Derive Git vars ─────────────────────────────
+      - id: var_set_outputs
+        name: Set Git‑related outputs
+        shell: bash
+        run: |
+          echo "::set-output name=github_sha_tag::$(echo "${GITHUB_SHA}" | cut -c1-8)"
+          echo "::set-output name=github_head_ref::${GITHUB_HEAD_REF%%/*}"
+          echo "::set-output name=github_ref::${GITHUB_REF}"
+          echo "::set-output name=github_ref_name::${GITHUB_REF_NAME}"
+          echo "::set-output name=github_ref_type::${GITHUB_REF_TYPE}"
+          echo "::set-output name=github_repository::${GITHUB_REPOSITORY}"
+
+      - name: Display derived vars
+        run: |
+          echo "github_sha_tag:     ${{ steps.var_set_outputs.outputs.github_sha_tag }}"
+          echo "github_head_ref:    ${{ steps.var_set_outputs.outputs.github_head_ref }}"
+          echo "github_ref:         ${{ steps.var_set_outputs.outputs.github_ref }}"
+          echo "github_ref_name:    ${{ steps.var_set_outputs.outputs.github_ref_name }}"
+          echo "github_ref_type:    ${{ steps.var_set_outputs.outputs.github_ref_type }}"
+          echo "github_repository:  ${{ steps.var_set_outputs.outputs.github_repository }}"
+
+      # ──────────────────────────── Detect release tags ─────────────────────────
+      - id: detect_release
+        name: Detect release version tag
+        shell: bash
+        run: |
+          if [[ "${{ steps.var_set_outputs.outputs.github_ref_type }}" == "tag" \
+             && "${{ steps.var_set_outputs.outputs.github_ref_name }}" =~ ^v[0-9]+(\.[0-9A-Za-z\-]+)*$ ]]; then
+            echo "::set-output name=is_release::true"
+            echo "::set-output name=version::${{ steps.var_set_outputs.outputs.github_ref_name }}"
+            echo "Release build detected for version ${{ steps.var_set_outputs.outputs.github_ref_name }}"
+          else
+            echo "::set-output name=is_release::false"
+            echo "::set-output name=version::"
+            echo "Not a release build – skipping versioned upload"
+          fi
 
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
@@ -105,10 +146,37 @@ jobs:
           unzip awscliv2.zip
           sudo ./aws/install
           
-      # replaces microFrontendArtifactUpload
-      - id: s3_upload_artifacts
-        name: Upload artifacts to S3
+      # Upload by commit SHA (renamed from s3_upload_artifacts for consistency)
+      - id: s3_upload_sha
+        name: Upload artifacts (commit hash)
         working-directory: ${{inputs.frontend_dir}}/build
+        shell: bash
         run: |
-          aws s3 cp . s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-          aws s3 sync . s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} --delete
+          aws s3 cp . \
+            "s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}}" \
+            --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
+
+      # Upload by version tag (if any, prioritizing inputs.tag then detected release tag)
+      - id: s3_upload_release
+        name: Upload artifacts (release version)
+        # Condition: Upload if inputs.tag is provided OR if a release is detected
+        if: ${{ inputs.tag != '' || steps.detect_release.outputs.is_release == 'true' }}
+        working-directory: ${{inputs.frontend_dir}}/build
+        shell: bash
+        run: |
+          RELEASE_VERSION=""
+          if [[ "${{ inputs.tag }}" != "" ]]; then
+            RELEASE_VERSION="${{ inputs.tag }}"
+            echo "Using provided input tag for release version: $RELEASE_VERSION"
+          elif [[ "${{ steps.detect_release.outputs.is_release }}" == "true" ]]; then
+            RELEASE_VERSION="${{ steps.detect_release.outputs.version }}"
+            echo "Using detected Git tag for release version: $RELEASE_VERSION"
+          fi
+          
+          if [[ "$RELEASE_VERSION" != "" ]]; then
+            aws s3 cp . \
+              "s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/$RELEASE_VERSION" \
+              --recursive --metadata release=$RELEASE_VERSION
+          else
+            echo "No release version determined. Skipping versioned upload."
+          fi
