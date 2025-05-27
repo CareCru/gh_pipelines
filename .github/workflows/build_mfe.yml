@@ -74,7 +74,7 @@ jobs:
       name: Set Git‑related outputs
       shell: bash
       run: |
-        echo "::set-output name=github_sha_tag::$(echo "${GITHUB_SHA}" | cut -c1-8)"
+        echo "::set-output name=github_sha_tag::$(echo "${GITHUB_SHA}" | cut -c1-7)"
         echo "::set-output name=github_head_ref::${GITHUB_HEAD_REF%%/*}"
         echo "::set-output name=github_ref::${GITHUB_REF}"
         echo "::set-output name=github_ref_name::${GITHUB_REF_NAME}"
@@ -168,7 +168,7 @@ jobs:
     - id: short_sha
       name: Export short commit SHA
       shell: bash
-      run: echo "::set-output name=tag::$(echo "${GITHUB_SHA}" | cut -c1-8)"
+      run: echo "::set-output name=tag::$(echo "${GITHUB_SHA}" | cut -c1-7)"
 
     # ──────────────────────────── AWS CLI (needed for s3 cp) ──────────────────
     - name: Install AWS CLI v2
