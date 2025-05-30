@@ -1,19 +1,35 @@
+# .github/workflows/build_mfe.yml
+# ────────────────────────────────────────────────────────────────────────────────
+# Reusable workflow: builds a micro‑frontend, then uploads its build artifacts
+# to S3 under two keys:
+#   1) <commit‑SHA‑short>   – always
+#   2) <semver‑tag>         – only when the run is triggered by a Git tag
+# Use:  workflow_call  from a pipeline repo.
+# ────────────────────────────────────────────────────────────────────────────────
+
 name: Builds and uploads MFE artifacts
 
 on:
   workflow_call:
     inputs:
       service_name:
-        description: Name of the service
+        description: Name of the service 
         required: true
         type: string
       environment:
-        description: Name of Environment
+        description: Name of environment (e.g. dev|test|prod|prod-us)
         required: true
+        type: string
+      tag:
+        description: "Optional version tag to use for S3 artifact upload (e.g., v1.2.3)"
+        required: false
         type: string
       region:
         type: string
         default: "ca-central-1"
+      node_ver:
+        type: string
+        default: "14"
       submodules:
         type: boolean
         default: false
@@ -21,14 +37,10 @@ on:
         type: string
         default: "web"
       secret_name:
-        description: AWS Secret Manger Secret Name
-        type: string
-      tag:
-        description: "Optional version tag to use for S3 artifact upload (e.g., v1.2.3)"
-        required: false
+        description: AWS Secrets Manager secret name
         type: string
       process_env_ci:
-        description: Sets env var CI var to let build commands know this is a CI environment
+        description: Sets env var CI for build scripts
         type: boolean
         default: true
     secrets:
@@ -38,145 +50,165 @@ on:
         required: true
       pac:
         required: false
+
 jobs:
   build:
+    if: ${{ inputs.tag != 'SKIP_BUILD' }}
     runs-on: self-hosted
+
     steps:
-      - uses: actions/checkout@v4
-        if: false == ${{inputs.submodules}}
+    # ──────────────────────────── Checkout ────────────────────────────────────
+    - name: Checkout repository (no submodules)
+      if: ${{ inputs.submodules == false }}
+      uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-        if: ${{inputs.submodules}}
-        with:
-          submodules: 'recursive'
-          token: ${{secrets.pac}}
+    - name: Checkout repository (with submodules)
+      if: ${{ inputs.submodules }}
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        token: ${{ secrets.pac }}
 
-      # ──────────────────────────── Derive Git vars ─────────────────────────────
-      - id: var_set_outputs
-        name: Set Git‑related outputs
-        shell: bash
-        run: |
-          echo "::set-output name=github_sha_tag::$(echo "${GITHUB_SHA}" | cut -c1-7)"
-          echo "::set-output name=github_head_ref::${GITHUB_HEAD_REF%%/*}"
-          echo "::set-output name=github_ref::${GITHUB_REF}"
-          echo "::set-output name=github_ref_name::${GITHUB_REF_NAME}"
-          echo "::set-output name=github_ref_type::${GITHUB_REF_TYPE}"
-          echo "::set-output name=github_repository::${GITHUB_REPOSITORY}"
+    # ──────────────────────────── Derive Git vars ─────────────────────────────
+    - id: var_set_outputs
+      name: Set Git‑related outputs
+      shell: bash
+      run: |
+        echo "::set-output name=github_sha_tag::$(echo "${GITHUB_SHA}" | cut -c1-7)"
+        echo "::set-output name=github_head_ref::${GITHUB_HEAD_REF%%/*}"
+        echo "::set-output name=github_ref::${GITHUB_REF}"
+        echo "::set-output name=github_ref_name::${GITHUB_REF_NAME}"
+        echo "::set-output name=github_ref_type::${GITHUB_REF_TYPE}"
+        echo "::set-output name=github_repository::${GITHUB_REPOSITORY}"
 
-      - name: Display derived vars
-        run: |
-          echo "github_sha_tag:     ${{ steps.var_set_outputs.outputs.github_sha_tag }}"
-          echo "github_head_ref:    ${{ steps.var_set_outputs.outputs.github_head_ref }}"
-          echo "github_ref:         ${{ steps.var_set_outputs.outputs.github_ref }}"
-          echo "github_ref_name:    ${{ steps.var_set_outputs.outputs.github_ref_name }}"
-          echo "github_ref_type:    ${{ steps.var_set_outputs.outputs.github_ref_type }}"
-          echo "github_repository:  ${{ steps.var_set_outputs.outputs.github_repository }}"
+    - name: Display derived vars
+      run: |
+        echo "github_sha_tag:     ${{ steps.var_set_outputs.outputs.github_sha_tag }}"
+        echo "github_head_ref:    ${{ steps.var_set_outputs.outputs.github_head_ref }}"
+        echo "github_ref:         ${{ steps.var_set_outputs.outputs.github_ref }}"
+        echo "github_ref_name:    ${{ steps.var_set_outputs.outputs.github_ref_name }}"
+        echo "github_ref_type:    ${{ steps.var_set_outputs.outputs.github_ref_type }}"
+        echo "github_repository:  ${{ steps.var_set_outputs.outputs.github_repository }}"
 
-      # ──────────────────────────── Detect release tags ─────────────────────────
-      - id: detect_release
-        name: Detect release version tag
-        shell: bash
-        run: |
-          if [[ "${{ steps.var_set_outputs.outputs.github_ref_type }}" == "tag" \
-             && "${{ steps.var_set_outputs.outputs.github_ref_name }}" =~ ^v[0-9]+(\.[0-9A-Za-z\-]+)*$ ]]; then
-            echo "::set-output name=is_release::true"
-            echo "::set-output name=version::${{ steps.var_set_outputs.outputs.github_ref_name }}"
-            echo "Release build detected for version ${{ steps.var_set_outputs.outputs.github_ref_name }}"
-          else
-            echo "::set-output name=is_release::false"
-            echo "::set-output name=version::"
-            echo "Not a release build – skipping versioned upload"
-          fi
+    # ──────────────────────────── Detect release tags ─────────────────────────
+    - id: detect_release
+      name: Detect release version tag
+      shell: bash
+      run: |
+        if [[ "${{ steps.var_set_outputs.outputs.github_ref_type }}" == "tag" \
+           && "${{ steps.var_set_outputs.outputs.github_ref_name }}" =~ ^v[0-9]+(\.[0-9A-Za-z\-]+)*$ ]]; then
+          echo "::set-output name=is_release::true"
+          echo "::set-output name=version::${{ steps.var_set_outputs.outputs.github_ref_name }}"
+          echo "Release build detected for version ${{ steps.var_set_outputs.outputs.github_ref_name }}"
+        else
+          echo "::set-output name=is_release::false"
+          echo "::set-output name=version::"
+          echo "Not a release build – skipping versioned upload"
+        fi
 
-      - uses: aws-actions/configure-aws-credentials@v1
-        name: Configure AWS Credentials
-        with:
-          aws-access-key-id: ${{secrets.aws_access_key_id}}
-          aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
-          aws-region: ${{ inputs.region }}
+    # ──────────────────────────── AWS credentials & secrets ───────────────────
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id:     ${{ secrets.aws_access_key_id }}
+        aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+        aws-region:            ${{ inputs.region }}
 
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: say8425/aws-secrets-manager-actions@v2
-        with:
-          AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
-          AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
-          OUTPUT_PATH: ${{inputs.frontend_dir}}/.env
+    - name: Populate .env from AWS Secrets Manager
+      uses: say8425/aws-secrets-manager-actions@v2
+      with:
+        AWS_ACCESS_KEY_ID:         ${{ secrets.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY:     ${{ secrets.aws_secret_access_key }}
+        AWS_DEFAULT_REGION:        ${{ inputs.region }}
+        SECRET_NAME:               build/${{ inputs.environment }}/${{ inputs.secret_name }}
+        OUTPUT_PATH:               ${{ inputs.frontend_dir }}/.env
 
-      - id: create_rc_files
-        name: Create RC files
-        working-directory: ${{inputs.frontend_dir}}
-        run: |
-          cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .yarnrc
-          cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
-          cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
-          cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
+    # ──────────────────────────── NPM/Yarn auth files ────────────────────────
+    - id: create_rc_files
+      name: Create .npmrc & .yarnrc
+      working-directory: ${{ inputs.frontend_dir }}
+      shell: bash
+      run: |
+        cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN"      >  .yarnrc
+        cat <<< "//registry.npmjs.org/:_authToken=$NPM_TOKEN"      >  .npmrc
+        cat <<< "@fortawesome:registry=https://npm.fontawesome.com/" >> .npmrc
+        cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          
-      - name: Install Yarn
-        run: npm install -g yarn
+    # ──────────────────────────── Install deps & build ────────────────────────
+    - name: Install Yarn
+      shell: bash
+      run: |
+        sudo apt-key adv --fetch-keys https://dl.yarnpkg.com/debian/pubkey.gpg
+        echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+        sudo apt-get update -y
+        sudo apt-get install -y yarn
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.node_ver }}
+        cache: yarn
+        cache-dependency-path: ${{ inputs.frontend_dir }}/yarn.lock
+
+    - name: Yarn install
+      uses: borales/actions-yarn@v4.2.0
+      with:
+        cmd: install
+        dir: ${{ inputs.frontend_dir }}
+
+    - name: Yarn build
+      uses: borales/actions-yarn@v4.2.0
+      with:
+        cmd: build
+        dir: ${{ inputs.frontend_dir }}
+      env:
+        CI: ${{ inputs.process_env_ci }}
+
+    # ──────────────────────────── Short SHA helper ───────────────────────────
+    - id: short_sha
+      name: Export short commit SHA
+      shell: bash
+      run: echo "::set-output name=tag::$(echo "${GITHUB_SHA}" | cut -c1-7)"
+
+    # ──────────────────────────── AWS CLI (needed for s3 cp) ──────────────────
+    - name: Install AWS CLI v2
+      shell: bash
+      run: |
+        curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+        unzip -q awscliv2.zip
+        sudo ./aws/install
+
+    # ──────────────────────────── Upload by commit SHA ────────────────────────
+    - id: s3_upload_sha
+      name: Upload artifacts (commit hash)
+      working-directory: ${{ inputs.frontend_dir }}/build
+      shell: bash
+      run: |
+        aws s3 cp . \
+          "s3://micro-frontend-artifacts/${{ inputs.service_name }}/${{ inputs.environment }}/${{ steps.short_sha.outputs.tag }}" \
+          --recursive --metadata commit=${{ steps.short_sha.outputs.tag }}
+
+    # ──────────────────────────── Upload by version tag (if any) ──────────────
+    - id: s3_upload_release
+      name: Upload artifacts (release version)
+      # Condition: Upload if inputs.tag is provided OR if a release is detected
+      if: ${{ inputs.tag != '' || steps.detect_release.outputs.is_release == 'true' }}
+      working-directory: ${{ inputs.frontend_dir }}/build
+      shell: bash
+      run: |
+        RELEASE_VERSION=""
+        if [[ "${{ inputs.tag }}" != "" ]]; then
+          RELEASE_VERSION="${{ inputs.tag }}"
+          echo "Using provided input tag for release version: $RELEASE_VERSION"
+        elif [[ "${{ steps.detect_release.outputs.is_release }}" == "true" ]]; then
+          RELEASE_VERSION="${{ steps.detect_release.outputs.version }}"
+          echo "Using detected Git tag for release version: $RELEASE_VERSION"
+        fi
         
-      - name: Install dependencies with caching
-        uses: bahmutov/npm-install@v1
-        with:
-          install-command: yarn install 
-          useRollingCache: true
-          working-directory: ${{inputs.frontend_dir}}
-        env:
-          NODE_ENV: development
-          
-      - name: Build project
-        run: yarn build
-        working-directory: ${{inputs.frontend_dir}}
-
-      - id: short_sha
-        name: Set Short SHA as var output
-        run: |
-          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-7`"
-
-      # Step needed for downloading current task def.
-      - name: Install AWS CLI Tools
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-          
-      # Upload by commit SHA (renamed from s3_upload_artifacts for consistency)
-      - id: s3_upload_sha
-        name: Upload artifacts (commit hash)
-        working-directory: ${{inputs.frontend_dir}}/build
-        shell: bash
-        run: |
+        if [[ "$RELEASE_VERSION" != "" ]]; then
           aws s3 cp . \
-            "s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}}" \
-            --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-
-      # Upload by version tag (if any, prioritizing inputs.tag then detected release tag)
-      - id: s3_upload_release
-        name: Upload artifacts (release version)
-        # Condition: Upload if inputs.tag is provided OR if a release is detected
-        if: ${{ inputs.tag != '' || steps.detect_release.outputs.is_release == 'true' }}
-        working-directory: ${{inputs.frontend_dir}}/build
-        shell: bash
-        run: |
-          RELEASE_VERSION=""
-          if [[ "${{ inputs.tag }}" != "" ]]; then
-            RELEASE_VERSION="${{ inputs.tag }}"
-            echo "Using provided input tag for release version: $RELEASE_VERSION"
-          elif [[ "${{ steps.detect_release.outputs.is_release }}" == "true" ]]; then
-            RELEASE_VERSION="${{ steps.detect_release.outputs.version }}"
-            echo "Using detected Git tag for release version: $RELEASE_VERSION"
-          fi
-          
-          if [[ "$RELEASE_VERSION" != "" ]]; then
-            aws s3 cp . \
-              "s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/$RELEASE_VERSION" \
-              --recursive --metadata release=$RELEASE_VERSION
-          else
-            echo "No release version determined. Skipping versioned upload."
-          fi
+            "s3://micro-frontend-artifacts/${{ inputs.service_name }}/${{ inputs.environment }}/$RELEASE_VERSION" \
+            --recursive --metadata release=$RELEASE_VERSION
+        else
+          echo "No release version determined. Skipping versioned upload."
+        fi
