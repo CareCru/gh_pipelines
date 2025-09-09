@@ -100,9 +100,6 @@ jobs:
       - name: Get short SHA of HEAD commit
         run: echo "HEAD_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - id: set-build-version
-        run: echo "BUILD_VERSION={{version}}" >> $GITHUB_ENV
-
       - name: Generate Docker Image Metadata
         id: meta
         uses: docker/metadata-action@v4.3.0
