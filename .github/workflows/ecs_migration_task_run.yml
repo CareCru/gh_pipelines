@@ -205,7 +205,6 @@ jobs:
             fi
           done
 
-
       - name: Execute AWS ECS Task Definition
         id: run_tsk_def
         run: |
