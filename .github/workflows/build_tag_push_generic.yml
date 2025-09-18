@@ -92,7 +92,7 @@ jobs:
       - name: Setup Build Arg List
         id: build_arg_list
         run : |
-          echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`"
+          echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`,BUILD_VERSION=${{ steps.var_set_outputs.outputs.github_ref_name }}"
 
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
