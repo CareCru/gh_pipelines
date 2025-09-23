@@ -130,6 +130,7 @@ jobs:
           BUILD_ARGS=$(cat .env)
           echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
           echo "$BUILD_ARGS" >> $GITHUB_ENV
+          echo "BUILD_VERSION=$DOCKER_METADATA_OUTPUT_VERSION" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Setup BuildX
