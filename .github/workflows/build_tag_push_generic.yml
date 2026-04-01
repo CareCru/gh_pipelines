@@ -64,13 +64,6 @@ jobs:
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{inputs.region}}
 
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
-        id: login-ecr
-
-      - name: Debug ECR Login
-        run: echo "Logged into ECR Registry ${{ steps.login-ecr.outputs.registry }}"
-
       - name: Extract ticket from branch name
         id: extract_ticket
         run: |
@@ -139,6 +132,9 @@ jobs:
       - uses: aws-actions/amazon-ecr-login@v1
         name: AWS ECR Login
         id: login-ecr
+
+      - name: Debug ECR Login
+        run: echo "Logged into ECR Registry ${{ steps.login-ecr.outputs.registry }}"
 
       - name: Verify Image
         id: verify_image
