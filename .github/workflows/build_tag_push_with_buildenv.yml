@@ -76,10 +76,6 @@ jobs:
           
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v1
-
-      - uses: aws-actions/amazon-ecr-login@v1
-        name: AWS ECR Login
-        id: login-ecr
         
       - name: Read secrets from AWS Secrets Manager into environment variables
         uses: say8425/aws-secrets-manager-actions@v2
