@@ -58,7 +58,7 @@ jobs:
       - id: short_sha
         name: Set short SHA
         run: |
-          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
           
       - uses: webfactory/ssh-agent@v0.7.0
         with:
@@ -92,7 +92,7 @@ jobs:
         run: |
           BRANCH_NAME=${{ github.head_ref }}
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
-          echo "::set-output name=ticket::$TICKET"
+          echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
 
       - name: Generate Docker Image Metadata
         id: meta
