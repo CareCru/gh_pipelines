@@ -1,87 +1,115 @@
-name: Create and Publish Docker Image
+name: Build and Publish Docker Image
 
 on:
   workflow_call:
     inputs:
       image_name:
-        description: Name of container image without a tag
+        description: Name of the container image without a tag
         required: true
         type: string
       ecr_repo:
-        description: Name of ECR repo used to store container images
+        description: Name of the Amazon Elastic Container Registry repo used to store container images
         required: true
         type: string
       context:
         type: string
+        description: The context directory containing the Dockerfile
         default: "."
       dockerfile:
-        description: Dockerfile name
         type: string
+        description: The name of the Dockerfile to build
         default: "Dockerfile"
       region:
         type: string
+        description: The AWS region to use for deployment
         default: "ca-central-1"
       submodules:
         type: boolean 
+        description: Whether to checkout Git submodules
         default: false
     secrets:
       aws_access_key_id:
         required: true
+        description: The AWS access key ID with permissions to access the ECR repository
       aws_secret_access_key:
         required: true
+        description: The AWS secret access key with permissions to access the ECR repository
       cicd_ssh_access_key:
         required: false
+        description: The SSH access key for the CI/CD pipeline (if applicable)
       pac:
         required: false
+        description: The personal access token for accessing Git submodules (if applicable)
+
 jobs:
-  build:
+  build_and_push:
     runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
+        name: Checkout Code
         if: false == ${{inputs.submodules}}
       
       - uses: actions/checkout@v4
+        name: Checkout Code with Submodules
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
           token: ${{secrets.pac}}
           
-      - id: var_set_outputs
-        name: Set output values
-        run: |
-          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"
-          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"
-          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"
-          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"
-          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"
-          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
-
-      - id: var_read_outputs
-        name: display output values
-        run: |
-          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}
-          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}
-          echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
-          echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
-          echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
-          echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
-
-      - id: short_sha
-        name: Set Short SHA
-        run: |
-          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
-
-      - uses: aws-actions/configure-aws-credentials@v1
-        name: Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{inputs.region}}
 
+      - name: Extract ticket from branch name
+        id: extract_ticket
+        run: |
+          #BRANCH_NAME=${{ github.head_ref }}
+          #TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
+          TICKET=${{ github.head_ref }}
+          echo "::set-output name=ticket::$TICKET"
           
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: say8425/aws-secrets-manager-actions@v2
+      - id: var_set_outputs
+        name: Set output values
+        run: |
+          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
+          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
+          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"          
+          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"          
+          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"          
+          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
+          
+      - id: var_read_outputs
+        name: display output values
+        run: |
+          echo github_sha_tag: ${{ steps.var_set_outputs.outputs.github_sha_tag }}          
+          echo github_head_ref: ${{ steps.var_set_outputs.outputs.github_head_ref }}      
+          echo github_ref: ${{ steps.var_set_outputs.outputs.github_ref }}
+          echo github_ref_name: ${{ steps.var_set_outputs.outputs.github_ref_name }}
+          echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
+          echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
+
+
+      - name: Generate Docker Image Metadata
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+          tags: |
+            type=raw,value=pr-${{ github.event.number }},enable=${{ github.event_name == 'pull_request' }}
+            type=raw,value=${{ steps.extract_ticket.outputs.ticket }},enable=${{ github.event_name == 'pull_request' }}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,prefix=v,pattern={{major}}.{{minor}}
+            type=semver,prefix=v,pattern={{version}}
+            type=sha,prefix=,suffix=,format=short
+
+      - name: Read Secrets from AWS Secrets Manager
+        uses: say8425/aws-secrets-manager-actions@v2.2.1
         with:
           AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
@@ -89,10 +117,14 @@ jobs:
           SECRET_NAME: build/generic/npm_tokens
           OUTPUT_PATH: '.env'
 
-      - name: Setup Build Arg List
-        id: build_arg_list
-        run : |
-          echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`"
+      - name: Set Build Arguments
+        id: build_arg_var
+        run: |
+          BUILD_ARGS=$(cat .env)
+          echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
+          echo "$BUILD_ARGS" >> $GITHUB_ENV
+          echo "BUILD_VERSION=$DOCKER_METADATA_OUTPUT_VERSION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Setup BuildX
         uses: docker/setup-buildx-action@v3
@@ -101,51 +133,24 @@ jobs:
         name: AWS ECR Login
         id: login-ecr
 
+      - name: Debug ECR Login
+        run: echo "Logged into ECR Registry ${{ steps.login-ecr.outputs.registry }}"
+
       - name: Verify Image
         id: verify_image
         run : |
           echo "::set-output name=exists::`docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?`"
 
-#       - uses: satackey/action-docker-layer-caching@v0.0.11
-#         # Ignore the failure of a step and avoid terminating the job.
-#         continue-on-error: true
-#         with:
-#           key: ${{inputs.image_name}}-docker-cache-{hash}
-#           restore-keys: |
-#             ${{inputs.image_name}}-docker-cache-
-
-      - name: Build image
-        uses: ilteoood/docker_buildx@master
-        if: steps.verify_image.outputs.exists == 1
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
         with:
-          publish: false # build done in next step to have multiple tags
-          load: true
-          platform: linux/amd64
-          buildArg: ${{ steps.build_arg_list.outputs.env }}
-          imageName:  ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
-          tag: ${{ steps.short_sha.outputs.tag }}
+          push: true
+          pull: true
           context: ${{inputs.context}}
-          dockerFile: ${{inputs.dockerfile}}
-
-      - name: Tag and Push
-        id: push_image_ecr
-        run : |
-          ## Set Tags
-          TAG1="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.var_set_outputs.outputs.github_head_ref }}"
-          TAG2="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.var_set_outputs.outputs.github_ref_name }}"
-          TAG3="${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:latest"
-
-          ## If image was already built, pull the image based on SHA tag
-          if [ ${{ steps.verify_image.outputs.exists }} == '0' ] ; then docker pull ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} ; fi
-
-          ## If github_head_ref is not set then don't create tag
-          if [ -z "${{ steps.var_set_outputs.outputs.github_head_ref }}" ] ; then echo "skip"; else docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }}  $TAG1; fi
-
-          ## Tag with github ref name, if tag has chars that break the command exit successfully to not break workflow
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }}  $TAG2 || true
-
-          ## Tag with latest
-          docker tag ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }}  $TAG3
-
-          ## Push all tags to registry
-          docker push --all-tags ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+          file: ${{inputs.dockerfile}}
+          platforms: linux/amd64
+          build-args: ${{ env.BUILD_ARGS }}
+          tags: ${{ steps.meta.outputs.tags }}
+          # cache-from: type=gha
+          # cache-to: type=gha,mode=max
