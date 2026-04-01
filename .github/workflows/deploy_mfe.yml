@@ -43,7 +43,7 @@ jobs:
       - id: short_sha
         name: Set Short SHA as var output
         run: |
-          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+          echo "tag=`echo ${GITHUB_SHA} | cut -c1-8`" >> "$GITHUB_OUTPUT"
       # Step needed for downloading current task def.
       - name: Install AWS CLI Tools
         run: |
