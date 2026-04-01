@@ -47,10 +47,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: false == ${{inputs.submodules}}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
@@ -93,29 +93,31 @@ jobs:
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{inputs.region}}
 
-      - name: Read secrets from AWS Secrets Manager into environment variables
-        uses: say8425/aws-secrets-manager-actions@v2
-        with:
-          AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
-          AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: build/${{inputs.environment}}/${{inputs.secret_name}}
-          OUTPUT_PATH: '.env'
-          
-      - name: Set build argument variables
-        id: build_arg_var
-        run: |
-          BUILD_ARGS=$(cat .env)
-          echo "BUILD_ARGS<<EOF" >> $GITHUB_ENV
-          echo "$BUILD_ARGS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Setup BuildX
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - uses: aws-actions/amazon-ecr-login@v1
         name: AWS ECR Login
         id: login-ecr
+        
+      - name: Generate Docker Image Metadata
+        id: meta
+        uses: docker/metadata-action@v4.3.0
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
+          tags: |
+            type=raw,value=pr-${{ github.event.number }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
+            type=raw,value=${{ steps.extract_ticket.outputs.ticket }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
+            type=ref,event=branch,prefix=${{inputs.environment}}-
+            type=ref,event=pr,prefix=${{inputs.environment}}-
+            type=semver,pattern={{version}},prefix=${{inputs.environment}}-
+            type=semver,pattern={{version}},prefix=${{inputs.environment}}-v
+            type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
+            type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-v
+            type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
+            type=sha,prefix=${{inputs.environment}},suffix=,format=short
+            type=sha,prefix=${{inputs.environment}}_,suffix=,format=short
+
 
       - name: Verify Image
         id: verify_image
@@ -128,9 +130,9 @@ jobs:
         with:
           ssh: |
             default=${{ env.SSH_AUTH_SOCK }}
-          load: true
+          push: true
           context: ${{inputs.context}}
           file: ${{inputs.dockerfile}}
           platforms: linux/amd64
-          build-args: ${{ env.BUILD_ARGS }}
-          tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }},${{inputs.environment}}_${{ steps.var_set_outputs.outputs.github_ref_name }}
+          build-args: ENVIRONMENT=${{inputs.environment}}
+          tags: ${{ steps.meta.outputs.tags }}

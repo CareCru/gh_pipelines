@@ -92,7 +92,7 @@ jobs:
         id: image-name
         env:
           ECR_REGISTRY: ${{ inputs.ecr_registry }}
-          ECR_REPOSITORY: ${{inputs.app_name}}
+          ECR_REPOSITORY: ${{inputs.ecr_repo}}
         run: |
           if [ -z "${{ inputs.tag }}" ]
           then
@@ -133,19 +133,77 @@ jobs:
       - name: Register AWS ECS Task Definition
         id: reg_tsk_def
         run: |
-          echo "::set-output name=task_revision::`aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }} --output json | jq .taskDefinition.revision`"
+          max_retries=10
+          wait_seconds=30
+          counter=0
+          task_revision=""
+      
+          while [ $counter -le $max_retries ]
+          do
+            # Attempt to register the task definition and capture the task revision.
+            task_revision=$(aws ecs register-task-definition --cli-input-json file://${{ steps.task-def.outputs.task-definition }} --output json | jq .taskDefinition.revision)
+      
+            # Check if the command was successful.
+            if [ $? -eq 0 ]; then
+              echo "Task definition registered successfully. Task revision: $task_revision"
+              echo "::set-output name=task_revision::$task_revision"
+              break
+            else
+              echo "Failed to register task definition. Attempt $((counter + 1))/$max_retries."
+              sleep $wait_seconds
+            fi
+      
+            counter=$((counter + 1))
+      
+            if [ $counter -gt $max_retries ]; then
+              echo "Max retries reached. Exiting..."
+              exit 1
+            fi
+          done
 
-      - name: Execute AWS ECS Task Definition
-        id: run_tsk_def
+      - name: Check Image Availability in ECR
+        continue-on-error: true
         run: |
-          echo "::set-output name=task_arn::`aws ecs run-task --cluster ${{inputs.environment}}-ecs-cluster --task-definition ${{inputs.environment}}-${{inputs.app_name}}-migrations:${{ steps.reg_tsk_def.outputs.task_revision }} --region ${{ steps.set_region.outputs.region }} --launch-type EC2 --output json | jq .tasks | jq '.[0].taskArn'`"
-
-      - name: Migration Task Wait
-        id: tsk_run_wait
-        run: |
-          aws ecs wait tasks-stopped --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }}
-          EXITCODE=`aws ecs describe-tasks --cluster ${{inputs.environment}}-ecs-cluster --tasks ${{ steps.run_tsk_def.outputs.task_arn }} | jq '.tasks[].containers[] | select(.name=="${{inputs.environment}}-${{inputs.app_name}}-migrations") | .exitCode'`
-          exit $EXITCODE
+          # Initialize a counter
+          counter=0
+          
+          # Max number of retries
+          max_retries=20
+          
+          # Decide which tag to look for based on input
+          if [ -z "${{ inputs.tag }}" ]; then
+            image_tag=${{ steps.short_sha.outputs.tag }}
+          else
+            image_tag=${{ inputs.tag }}
+          fi
+          
+          echo "Looking for image with tag $image_tag in ${{ inputs.ecr_repo }}."
+          
+          # Loop to check image availability
+          while [ $counter -le $max_retries ]
+          do
+            exists=$(aws ecr list-images --region ca-central-1 --repository-name ${{ inputs.ecr_repo }} --filter "tagStatus=TAGGED" --query "imageIds[?imageTag=='$image_tag']" --output text)
+            
+            if [ $? -ne 0 ]; then
+              echo "Error running aws ecr list-images command. Exiting..."
+              exit 1
+            fi
+            
+            if [ -n "$exists" ]; then
+              echo "Image exists in ECR repository. Proceeding..."
+              break
+            else
+              echo "Image with tag $image_tag does not exist in ECR repository ${{ inputs.ecr_repo }}. Attempt $((counter + 1))/$max_retries. Waiting for 30 seconds before retrying..."
+              sleep 30
+            fi
+            
+            counter=$((counter+1))
+            
+            if [ $counter -ge $max_retries ]; then
+              echo "Max retries reached. Exiting..."
+              exit 1
+            fi
+          done
 
       - name: Task Def Cleaner
         uses: ScrumWorks/github-actions-aws-task-cleaner@v1

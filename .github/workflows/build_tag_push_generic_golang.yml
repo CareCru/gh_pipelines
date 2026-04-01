@@ -46,10 +46,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: false == ${{inputs.submodules}}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
@@ -72,7 +72,7 @@ jobs:
           aws-region: ${{inputs.region}}
           
       - name: Setup BuildX
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - uses: aws-actions/amazon-ecr-login@v1
         name: AWS ECR Login
@@ -105,9 +105,9 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
-            type=semver,prefix=v,pattern={{version}}
-            type=semver,prefix=v,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=,suffix=,format=short
+            type=semver,prefix=v,pattern={{version}}
             
       - name: Set Build Arguments
         id: build_arg_var
@@ -130,4 +130,5 @@ jobs:
           platforms: linux/amd64
           build-args: ${{ env.BUILD_ARGS }}
           tags: ${{ steps.meta.outputs.tags }}
-
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -94,7 +94,7 @@ jobs:
         id: image-name
         env:
           ECR_REGISTRY: ${{ inputs.ecr_registry }}
-          ECR_REPOSITORY: ${{inputs.app_name}}
+          ECR_REPOSITORY: ${{inputs.ecr_repo}}
         run: |
           if [ -z "${{ inputs.tag }}" ]
           then
@@ -109,6 +109,37 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install
+          
+      - name: Check if Image Exists
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ECR_REPOSITORY: ${{inputs.ecr_repo}}
+        run: |
+          IMAGE_NAME=${{ steps.image-name.outputs.image }}
+          TAG_NAME=$(echo $IMAGE_NAME | awk -F: '{print $2}')
+          
+          end=$((SECONDS+900))  # 15 minutes = 900 seconds
+          while [ $SECONDS -lt $end ]; do
+            TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+            echo "$TIMESTAMP: Checking for image with tag $TAG_NAME in repository..."
+            
+            # Use AWS CLI to check if image with the tag exists
+            IMAGES=$(aws ecr list-images --repository-name $ECR_REPOSITORY --region ca-central-1)
+            
+            if [[ $IMAGES == *"$TAG_NAME"* ]]; then
+              echo "$TIMESTAMP: Image with tag $TAG_NAME found!"
+              exit 0
+            fi
+            
+            # Wait for 30 seconds before next check
+            sleep 30
+          done
+      
+          TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+          echo "$TIMESTAMP: Image with tag $TAG_NAME not found after 15 minutes. Exiting..."
+          exit 1
 
       - name: Grab Live Task_Definition
         env:
@@ -131,14 +162,6 @@ jobs:
           task-definition: task_def.json
           container-name: ${{inputs.environment}}-${{inputs.app_name}}
           image: ${{ steps.image-name.outputs.image }}
-
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{inputs.environment}}-${{inputs.app_name}}
-          cluster: ${{ steps.set_region.outputs.cluster }}-ecs-cluster
-          wait-for-service-stability: true
           
       - name: Task Def Cleaner
         uses: ScrumWorks/github-actions-aws-task-cleaner@v1

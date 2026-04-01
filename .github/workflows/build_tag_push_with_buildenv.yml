@@ -46,10 +46,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: false == ${{inputs.submodules}}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
@@ -97,8 +97,23 @@ jobs:
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
           echo "::set-output name=ticket::$TICKET"
 
-      - name: Get short SHA of HEAD commit
-        run: echo "HEAD_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Setup Build Arg List
+        id: build_arg_list
+        run : |
+          echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`"
+
+
+      - name: Setup BuildX
+        uses: docker/setup-buildx-action@v3
+
+      - uses: aws-actions/amazon-ecr-login@v1
+        name: AWS ECR Login
+        id: login-ecr
+
+      - name: Verify Image
+        id: verify_image
+        run : |
+          echo "::set-output name=exists::`docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?`"
 
       - name: Generate Docker Image Metadata
         id: meta
