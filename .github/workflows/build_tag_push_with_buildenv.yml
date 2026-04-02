@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        if: false == ${{inputs.submodules}}
+        if: ${{ inputs.submodules == false }}
 
       - uses: actions/checkout@v4
         if: ${{inputs.submodules}}

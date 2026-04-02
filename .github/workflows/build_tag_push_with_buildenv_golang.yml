@@ -48,7 +48,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        if: false == ${{inputs.submodules}}
+        if: ${{ inputs.submodules == false }}
 
       - uses: actions/checkout@v4
         if: ${{inputs.submodules}}
@@ -81,11 +81,25 @@ jobs:
         name: Set short SHA
         run: |
           echo "tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
-          
+
+      - name: Ensure OpenSSH client for ssh-agent
+        run: |
+          command -v ssh-agent >/dev/null 2>&1 && exit 0
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update -y && sudo apt-get install -y openssh-client
+          elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y openssh-clients
+          elif command -v yum >/dev/null 2>&1; then
+            sudo yum install -y openssh-clients
+          else
+            echo "ssh-agent not found and no supported package manager to install openssh-client" >&2
+            exit 1
+          fi
+
       - uses: webfactory/ssh-agent@v0.7.0
         with:
-            ssh-private-key: ${{ secrets.cicd_ssh_access_key }}  
-            
+            ssh-private-key: ${{ secrets.cicd_ssh_access_key }}
+
       - uses: aws-actions/configure-aws-credentials@v1
         name: Configure AWS Credentials
         with:
