@@ -58,7 +58,7 @@ jobs:
       - id: short_sha
         name: Set short SHA
         run: |
-          echo "::set-output name=tag::`echo ${GITHUB_SHA} | cut -c1-8`"
+          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
           
       - id: ssh_key
         name: Output SSH Key
@@ -96,7 +96,7 @@ jobs:
       - name: Setup Build Arg List
         id: build_arg_list
         run : |
-          echo "::set-output name=env::`awk '{print $1}' .env | paste -s -d, -`"
+          echo "env=$(awk '{print $1}' .env | paste -s -d, -)" >> "$GITHUB_OUTPUT"
 
 
       - name: Setup BuildX
@@ -109,7 +109,7 @@ jobs:
       - name: Verify Image
         id: verify_image
         run : |
-          echo "::set-output name=exists::`docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?`"
+          echo "exists=$(docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?)" >> "$GITHUB_OUTPUT"
 
       - name: Generate Docker Image Metadata
         id: meta
@@ -127,22 +127,6 @@ jobs:
             type=ref,event=tag,prefix=${{ inputs.environment }}-
             type=sha,prefix=${{ inputs.environment }}-,suffix=,format=short
             type=semver,prefix=${{ inputs.environment }}-v,pattern={{version}}
-
-
-#       - name: Generate Docker Image Metadata
-#         id: meta
-#         uses: docker/metadata-action@v4.3.0
-#         with:
-#           images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
-#           tags: |
-#             type=raw,value=pr-${{ github.event.number }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
-#             type=raw,value=${{ steps.extract_ticket.outputs.ticket }},enable=${{ github.event_name == 'pull_request' }},prefix=${{inputs.environment}}-
-#             type=ref,event=branch,prefix=${{inputs.environment}}-
-#             type=ref,event=pr,prefix=${{inputs.environment}}-
-#             type=semver,pattern={{version}},prefix=${{inputs.environment}}-
-#             type=semver,pattern={{major}}.{{minor}},prefix=${{inputs.environment}}-
-#             type=ref,event=tag,prefix=${{inputs.environment}}-
-#             type=sha,prefix=${{inputs.environment}}-,suffix=,format=short
             
       - name: Set Build Arguments
         id: build_arg_var
@@ -164,5 +148,3 @@ jobs:
           platforms: linux/amd64
           build-args: ${{ env.BUILD_ARGS }}
           tags: ${{ steps.meta.outputs.tags }}
-
-
