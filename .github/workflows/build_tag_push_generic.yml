@@ -92,7 +92,7 @@ jobs:
           echo github_ref_type: ${{ steps.var_set_outputs.outputs.github_ref_type }}
           echo github_repository: ${{ steps.var_set_outputs.outputs.github_repository }}
 
-      - uses: aws-actions/amazon-ecr-login@v1
+      - uses: aws-actions/amazon-ecr-login@v2
         name: AWS ECR Login
         id: login-ecr
 
