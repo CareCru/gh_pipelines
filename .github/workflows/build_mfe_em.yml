@@ -60,11 +60,11 @@ jobs:
     # ──────────────────────────── Checkout ────────────────────────────────────
     - name: Checkout repository (no submodules)
       if: ${{ inputs.submodules == false }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Checkout repository (with submodules)
       if: ${{ inputs.submodules }}
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         submodules: recursive
         token: ${{ secrets.pac }}
