@@ -91,7 +91,7 @@ jobs:
         run: |
           BRANCH_NAME=${{ github.head_ref }}
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
-          echo "::set-output name=ticket::$TICKET"
+          echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
 
       - name: Setup Build Arg List
         id: build_arg_list

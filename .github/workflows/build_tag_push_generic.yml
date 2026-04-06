@@ -70,17 +70,17 @@ jobs:
           #BRANCH_NAME=${{ github.head_ref }}
           #TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
           TICKET=${{ github.head_ref }}
-          echo "::set-output name=ticket::$TICKET"
+          echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
           
       - id: var_set_outputs
         name: Set output values
         run: |
-          echo "::set-output name=github_sha_tag::`echo ${GITHUB_SHA} | cut -c1-8`"          
-          echo "::set-output name=github_head_ref::`echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}'`"          
-          echo "::set-output name=github_ref::`echo ${GITHUB_REF}`"          
-          echo "::set-output name=github_ref_name::`echo ${GITHUB_REF_NAME}`"          
-          echo "::set-output name=github_ref_type::`echo ${GITHUB_REF_TYPE}`"          
-          echo "::set-output name=github_repository::`echo ${GITHUB_REPOSITORY}`"
+          echo "github_sha_tag=$(echo "${GITHUB_SHA}" | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          echo "github_head_ref=$(echo "${GITHUB_HEAD_REF}" | awk -F '/' '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "github_ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
+          echo "github_ref_name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          echo "github_ref_type=${GITHUB_REF_TYPE}" >> "$GITHUB_OUTPUT"
+          echo "github_repository=${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
           
       - id: var_read_outputs
         name: display output values
