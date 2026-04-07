@@ -46,10 +46,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{ inputs.submodules == false }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
@@ -74,9 +74,6 @@ jobs:
           aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
           aws-region: ${{inputs.region}}
           
-      - name: Setup BuildX
-        uses: docker/setup-buildx-action@v1
-        
       - name: Read secrets from AWS Secrets Manager into environment variables
         uses: say8425/aws-secrets-manager-actions@v2
         with:
@@ -91,7 +88,7 @@ jobs:
         run: |
           BRANCH_NAME=${{ github.head_ref }}
           TICKET=$(echo $BRANCH_NAME | cut -d/ -f1)
-          echo "::set-output name=ticket::$TICKET"
+          echo "ticket=$TICKET" >> "$GITHUB_OUTPUT"
 
       - name: Setup Build Arg List
         id: build_arg_list
@@ -100,9 +97,9 @@ jobs:
 
 
       - name: Setup BuildX
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
-      - uses: aws-actions/amazon-ecr-login@v1
+      - uses: aws-actions/amazon-ecr-login@v2
         name: AWS ECR Login
         id: login-ecr
 
@@ -113,7 +110,7 @@ jobs:
 
       - name: Generate Docker Image Metadata
         id: meta
-        uses: docker/metadata-action@v4.3.0
+        uses: docker/metadata-action@v6
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.image_name }}
           tags: |
@@ -139,7 +136,7 @@ jobs:
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v7
         with:
           push: true
           pull: true

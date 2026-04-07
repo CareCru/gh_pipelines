@@ -46,10 +46,10 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{ inputs.submodules == false }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: ${{inputs.submodules}}
         with:
           submodules: 'recursive'
@@ -86,9 +86,9 @@ jobs:
           aws-region: ${{inputs.region}}
           
       - name: Setup BuildX
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
-      - uses: aws-actions/amazon-ecr-login@v1
+      - uses: aws-actions/amazon-ecr-login@v2
         name: AWS ECR Login
         id: login-ecr
         
@@ -110,7 +110,7 @@ jobs:
 
       - name: Generate Docker Image Metadata
         id: meta
-        uses: docker/metadata-action@v4.3.0
+        uses: docker/metadata-action@v6
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}
           tags: |
@@ -133,7 +133,7 @@ jobs:
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           ssh: |
             default=${{ env.SSH_AUTH_SOCK }}
