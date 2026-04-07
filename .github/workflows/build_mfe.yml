@@ -151,16 +151,12 @@ jobs:
         cache-dependency-path: ${{ inputs.frontend_dir }}/yarn.lock
 
     - name: Yarn install
-      uses: borales/actions-yarn@v4.2.0
-      with:
-        cmd: install
-        dir: ${{ inputs.frontend_dir }}
+      working-directory: ${{ inputs.frontend_dir }}
+      run: yarn install
 
     - name: Yarn build
-      uses: borales/actions-yarn@v4.2.0
-      with:
-        cmd: build
-        dir: ${{ inputs.frontend_dir }}
+      working-directory: ${{ inputs.frontend_dir }}
+      run: yarn build
       env:
         CI: ${{ inputs.process_env_ci }}
 
