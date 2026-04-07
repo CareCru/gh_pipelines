@@ -58,7 +58,7 @@ jobs:
       - id: short_sha
         name: Set short SHA
         run: |
-          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
           
       - id: ssh_key
         name: Output SSH Key
