@@ -144,7 +144,7 @@ jobs:
         sudo apt-get install -y yarn
 
     - name: Setup Node
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node_ver }}
         cache: yarn
