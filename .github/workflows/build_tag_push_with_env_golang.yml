@@ -59,7 +59,7 @@ jobs:
       - id: var_set_outputs
         name: Set output values
         run: |
-          echo "github_sha_tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          echo "github_sha_tag=$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
           echo "github_head_ref=$(echo ${GITHUB_HEAD_REF} | awk -F '/' '{print $1}')" >> "$GITHUB_OUTPUT"
           echo "github_ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
           echo "github_ref_name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
@@ -80,13 +80,13 @@ jobs:
       - id: short_sha
         name: Set short SHA
         run: |
-          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
           
       - uses: webfactory/ssh-agent@v0.10.0
         with:
             ssh-private-key: ${{ secrets.cicd_ssh_access_key }}  
             
-      - uses: aws-actions/configure-aws-credentials@v1
+      - uses: aws-actions/configure-aws-credentials@v6
         name: Configure AWS Credentials
         with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
@@ -100,11 +100,6 @@ jobs:
         name: AWS ECR Login
         id: login-ecr
 
-      - name: Verify Image
-        id: verify_image
-        run : |
-          echo "exists=$(docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?)" >> "$GITHUB_OUTPUT"
-          
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v7
@@ -118,3 +113,10 @@ jobs:
           platforms: linux/amd64
           build-args: ENVIRONMENT=${{inputs.environment}}
           tags: ${{inputs.environment}}_${{ steps.short_sha.outputs.tag }}
+
+      - name: Verify Image
+        id: verify_image
+        run: |
+          set +e
+          docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{inputs.environment}}_${{ steps.short_sha.outputs.tag }} > /dev/null 2>&1
+          echo "exists=$?" >> "$GITHUB_OUTPUT"

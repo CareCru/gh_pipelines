@@ -58,7 +58,7 @@ jobs:
       - id: short_sha
         name: Set short SHA
         run: |
-          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
       - name: Ensure OpenSSH client for ssh-agent
         run: |
@@ -78,7 +78,7 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.cicd_ssh_access_key }}  
           
-      - uses: aws-actions/configure-aws-credentials@v1
+      - uses: aws-actions/configure-aws-credentials@v6
         name: Configure AWS Credentials
         with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}

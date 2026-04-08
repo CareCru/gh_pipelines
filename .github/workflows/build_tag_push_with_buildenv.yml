@@ -58,7 +58,7 @@ jobs:
       - id: short_sha
         name: Set short SHA
         run: |
-          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-8)" >> "$GITHUB_OUTPUT"
+          echo "tag=$(echo ${GITHUB_SHA} | cut -c1-7)" >> "$GITHUB_OUTPUT"
           
       - id: ssh_key
         name: Output SSH Key
@@ -67,7 +67,7 @@ jobs:
           echo "${{ secrets.cicd_ssh_access_key }}" > ~/.ssh/id_rsa
           chmod 400 ~/.ssh/id_rsa
           
-      - uses: aws-actions/configure-aws-credentials@v1
+      - uses: aws-actions/configure-aws-credentials@v6
         name: Configure AWS Credentials
         with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
@@ -102,11 +102,6 @@ jobs:
       - uses: aws-actions/amazon-ecr-login@v2
         name: AWS ECR Login
         id: login-ecr
-
-      - name: Verify Image
-        id: verify_image
-        run : |
-          echo "exists=$(docker manifest inspect ${{ steps.login-ecr.outputs.registry }}/${{inputs.image_name}}:${{ steps.short_sha.outputs.tag }} > /dev/null ; echo $?)" >> "$GITHUB_OUTPUT"
 
       - name: Generate Docker Image Metadata
         id: meta
@@ -145,3 +140,13 @@ jobs:
           platforms: linux/amd64
           build-args: ${{ env.BUILD_ARGS }}
           tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Verify Image
+        id: verify_image
+        env:
+          META_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set +e
+          TAG=$(echo "$META_TAGS" | head -n1 | tr -d '\r')
+          docker manifest inspect "$TAG" > /dev/null 2>&1
+          echo "exists=$?" >> "$GITHUB_OUTPUT"

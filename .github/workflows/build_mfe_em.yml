@@ -108,7 +108,7 @@ jobs:
 
     # ──────────────────────────── AWS credentials & secrets ───────────────────
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         aws-access-key-id:     ${{ secrets.aws_access_key_id }}
         aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
@@ -141,18 +141,14 @@ jobs:
         node-version: ${{ inputs.node_ver }}
 
     - name: Yarn install
-      uses: borales/actions-yarn@v4.2.0
-      with:
-        cmd: install
-        dir: ${{ inputs.frontend_dir }}
+      working-directory: ${{ inputs.frontend_dir }}
+      run: yarn install
       env:
         NODE_ENV: development
 
     - name: Yarn build
-      uses: borales/actions-yarn@v4.2.0
-      with:
-        cmd: build
-        dir: ${{ inputs.frontend_dir }}
+      working-directory: ${{ inputs.frontend_dir }}
+      run: yarn build
       env:
         CI: ${{ inputs.process_env_ci }}
 

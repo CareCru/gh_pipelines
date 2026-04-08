@@ -74,7 +74,7 @@ jobs:
       name: Set Git‑related outputs
       shell: bash
       run: |
-        echo "github_sha_tag=$(echo "${GITHUB_SHA}" | cut -c1-8)" >> "$GITHUB_OUTPUT"
+        echo "github_sha_tag=$(echo "${GITHUB_SHA}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
         echo "github_head_ref=${GITHUB_HEAD_REF%%/*}" >> "$GITHUB_OUTPUT"
         echo "github_ref=${GITHUB_REF}" >> "$GITHUB_OUTPUT"
         echo "github_ref_name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
@@ -108,7 +108,7 @@ jobs:
 
     # ──────────────────────────── AWS credentials & secrets ───────────────────
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v6
       with:
         aws-access-key-id:     ${{ secrets.aws_access_key_id }}
         aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
@@ -151,16 +151,12 @@ jobs:
         cache-dependency-path: ${{ inputs.frontend_dir }}/yarn.lock
 
     - name: Yarn install
-      uses: borales/actions-yarn@v4.2.0
-      with:
-        cmd: install
-        dir: ${{ inputs.frontend_dir }}
+      working-directory: ${{ inputs.frontend_dir }}
+      run: yarn install
 
     - name: Yarn build
-      uses: borales/actions-yarn@v4.2.0
-      with:
-        cmd: build
-        dir: ${{ inputs.frontend_dir }}
+      working-directory: ${{ inputs.frontend_dir }}
+      run: yarn build
       env:
         CI: ${{ inputs.process_env_ci }}
 
@@ -168,7 +164,7 @@ jobs:
     - id: short_sha
       name: Export short commit SHA
       shell: bash
-      run: echo "tag=$(echo "${GITHUB_SHA}" | cut -c1-8)" >> "$GITHUB_OUTPUT"
+      run: echo "tag=$(echo "${GITHUB_SHA}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
     # ──────────────────────────── AWS CLI (needed for s3 cp) ──────────────────
     - name: Install AWS CLI v2
