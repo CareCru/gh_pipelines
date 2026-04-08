@@ -114,14 +114,21 @@ jobs:
         aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
         aws-region:            ${{ inputs.region }}
 
-    - name: Populate .env from AWS Secrets Manager
-      uses: say8425/aws-secrets-manager-actions@v2
+    - uses: actions/setup-node@v4
       with:
-        AWS_ACCESS_KEY_ID:         ${{ secrets.aws_access_key_id }}
-        AWS_SECRET_ACCESS_KEY:     ${{ secrets.aws_secret_access_key }}
-        AWS_DEFAULT_REGION:        ${{ inputs.region }}
-        SECRET_NAME:               build/${{ inputs.environment }}/${{ inputs.secret_name }}
-        OUTPUT_PATH:               ${{ inputs.frontend_dir }}/.env
+        node-version: 24
+
+    - name: Install AWS SDK
+      run: npm install --no-save @aws-sdk/client-secrets-manager
+
+    - name: Populate .env from AWS Secrets Manager
+      env:
+        AWS_ACCESS_KEY_ID:     ${{ secrets.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+        AWS_DEFAULT_REGION:    ${{ inputs.region }}
+        SECRET_NAME:           build/${{ inputs.environment }}/${{ inputs.secret_name }}
+        OUTPUT_PATH:           ${{ inputs.frontend_dir }}/.env
+      run: node scripts/populate-env.mjs
 
     # ──────────────────────────── NPM/Yarn auth files ────────────────────────
     - id: create_rc_files
