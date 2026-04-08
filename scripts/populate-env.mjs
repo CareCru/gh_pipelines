@@ -1,5 +1,5 @@
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-import { writeFileSync } from 'fs';
+import { appendFileSync } from 'fs';
 
 const { AWS_DEFAULT_REGION, SECRET_NAME, OUTPUT_PATH } = process.env;
 
@@ -12,5 +12,5 @@ const lines = Object.entries(JSON.parse(SecretString))
   .map(([k, v]) => `${k}=${v}`)
   .join('\n');
 
-writeFileSync(OUTPUT_PATH, lines);
+appendFileSync(OUTPUT_PATH, lines);
 console.log(`✅ Written to ${OUTPUT_PATH}`);
