@@ -67,7 +67,7 @@ jobs:
           echo "${{ secrets.cicd_ssh_access_key }}" > ~/.ssh/id_rsa
           chmod 400 ~/.ssh/id_rsa
           
-      - uses: aws-actions/configure-aws-credentials@v1
+      - uses: aws-actions/configure-aws-credentials@v6
         name: Configure AWS Credentials
         with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}

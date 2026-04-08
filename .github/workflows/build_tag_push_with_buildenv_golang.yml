@@ -100,7 +100,7 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.cicd_ssh_access_key }}
 
-      - uses: aws-actions/configure-aws-credentials@v1
+      - uses: aws-actions/configure-aws-credentials@v6
         name: Configure AWS Credentials
         with:
           aws-access-key-id: ${{secrets.aws_access_key_id}}
