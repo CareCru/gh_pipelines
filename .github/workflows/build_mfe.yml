@@ -135,20 +135,20 @@ jobs:
         cat <<< "//npm.fontawesome.com/:_authToken=$FORT_AWESOME_NPM_TOKEN" >> .npmrc
 
     # ──────────────────────────── Install deps & build ────────────────────────
-    - name: Install Yarn
-      shell: bash
-      run: |
-        sudo apt-key adv --fetch-keys https://dl.yarnpkg.com/debian/pubkey.gpg
-        echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-        sudo apt-get update -y
-        sudo apt-get install -y yarn
-
     - name: Setup Node
       uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node_ver }}
         cache: yarn
         cache-dependency-path: ${{ inputs.frontend_dir }}/yarn.lock
+
+    - name: Install Yarn
+      run: |
+        if command -v yarn >/dev/null 2>&1; then
+          echo "Yarn already available: $(command -v yarn) ($(yarn --version))"
+        else
+          npm install -g yarn
+        fi
 
     - name: Yarn install
       working-directory: ${{ inputs.frontend_dir }}
