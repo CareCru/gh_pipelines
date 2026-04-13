@@ -139,16 +139,12 @@ jobs:
       uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node_ver }}
-        cache: yarn
-        cache-dependency-path: ${{ inputs.frontend_dir }}/yarn.lock
 
     - name: Install Yarn
+      shell: bash
       run: |
-        if command -v yarn >/dev/null 2>&1; then
-          echo "Yarn already available: $(command -v yarn) ($(yarn --version))"
-        else
-          npm install -g yarn
-        fi
+        command -v yarn >/dev/null 2>&1 || npm install -g yarn
+        echo "$(npm prefix -g)/bin" >> "$GITHUB_PATH"
 
     - name: Yarn install
       working-directory: ${{ inputs.frontend_dir }}
