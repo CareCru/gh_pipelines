@@ -1,58 +1,41 @@
-name: Deploys MFE artifacts
+# Triggers carecru-deployment-configs to bump release and sync via Helm MFE hook (ArgoCD).
+# v4 breaking change: replaces direct S3 copy; requires pat_devops and app/mfe_service_name inputs.
+name: Deploy MFE
 
 on:
   workflow_call:
     inputs:
-      service_name:
-        description: Name of the service
+      app:
+        description: ArgoCD application name (carecru-deployment-configs manifest basename, e.g. dashboard)
         required: true
         type: string
       environment:
-        description: Name of Environment
+        description: Target environment (dev, test, prod, prod-us)
         required: true
-        type: string
-      region:
-        type: string
-        default: "ca-central-1"
-      domain:
-        description: domain name for s3 bucket naming
-        required: false
         type: string
       tag:
-        description: optional tag to deploy
+        description: Version tag to deploy (short SHA or release tag)
+        required: true
+        type: string
+      mfe_service_name:
+        description: S3 artifacts path segment under micro-frontend-artifacts (e.g. dashboard-frontend)
         required: false
         type: string
+        default: ""
     secrets:
-      aws_access_key_id:
+      pat_devops:
+        description: PAT with repo dispatch access to carecru-deployment-configs
         required: true
-      aws_secret_access_key:
-        required: true
-      pac:
-        required: false
-jobs:
-  build:
-    runs-on: self-hosted
-    steps:
-      - uses: aws-actions/configure-aws-credentials@v6
-        name: Configure AWS Credentials
-        with:
-          aws-access-key-id: ${{secrets.aws_access_key_id}}
-          aws-secret-access-key:  ${{secrets.aws_secret_access_key}}
-          aws-region: ${{ inputs.region }}
 
-      - id: short_sha
-        name: Set Short SHA as var output
-        run: |
-          echo "tag=`echo ${GITHUB_SHA} | cut -c1-7`" >> "$GITHUB_OUTPUT"
-      # Step needed for downloading current task def.
-      - name: Install AWS CLI Tools
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install
-      # replaces deployStaticMicroFrontend
-      - id: deploy_s3_artifacts
-        name: Deploy S3 artifacts
-        run: |
-          aws s3 cp s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}${{inputs.domain}} --recursive --metadata commit=${{steps.short_sha.outputs.tag}}
-          aws s3 sync s3://micro-frontend-artifacts/${{inputs.service_name}}/${{inputs.environment}}/${{steps.short_sha.outputs.tag}} s3://${{inputs.environment}}-${{inputs.service_name}}${{inputs.domain}} --delete
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger carecru-deployment-configs update
+        uses: peter-evans/repository-dispatch@v4.0.1
+        with:
+          token: ${{ secrets.pat_devops }}
+          repository: CareCru/carecru-deployment-configs
+          event-type: update_application_version
+          client-payload: >-
+            {"env": "${{ inputs.environment }}", "app": "${{ inputs.app }}", "tag": "${{ inputs.tag }}", "mfe_service_name": "${{ inputs.mfe_service_name }}"}
