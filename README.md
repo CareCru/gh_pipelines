@@ -29,3 +29,27 @@ Use **`v4`**, **`v5`**, and so on the same way when those major lines exist. The
 - Pin to an exact release: `uses: OWNER/gh_pipelines/.github/workflows/example.yml@v3.4.0`
 
 Avoid having every repository point at **`main`** unless you intentionally want unreleased workflow changes.
+
+### v4 breaking change: `deploy_mfe.yml`
+
+**v4** replaces direct S3 copy with ArgoCD deploy via `repository_dispatch` to `carecru-deployment-configs`.
+
+| v3 (removed) | v4 |
+|---|---|
+| `service_name`, `region`, `domain`, AWS key secrets | `app`, `tag`, `mfe_service_name`, `pat_devops` |
+| Copies `micro-frontend-artifacts` → env bucket in the workflow | Bumps `release` in `{env}/{app}.yaml`; Helm MFE sync hook runs in cluster |
+
+Example:
+
+```yaml
+uses: CareCru/gh_pipelines/.github/workflows/deploy_mfe.yml@v4
+with:
+  app: dashboard
+  environment: dev
+  tag: abc1234
+  mfe_service_name: dashboard-frontend
+secrets:
+  pat_devops: ${{ secrets.PAT_DEVOPS }}
+```
+
+Repos still on **v3** `deploy_mfe.yml` keep the old behavior until they upgrade to **@v4**.
