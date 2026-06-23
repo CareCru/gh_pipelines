@@ -33,8 +33,8 @@ on:
         type: string
         default: update_application_version
     secrets:
-      app_id:
-        description: GitHub App ID for repository dispatch
+      client_id:
+        description: GitHub Client ID for repository dispatch
         required: true
       app_private_key:
         description: GitHub App private key
@@ -48,7 +48,7 @@ jobs:
         uses: actions/create-github-app-token@v3.2.0
         id: app-token
         with:
-          app-id: ${{ secrets.app_id }}
+          client-id: ${{ secrets.client_id }}
           private-key: ${{ secrets.app_private_key }}
           owner: CareCru
           repositories: ${{ inputs.target_repo }}
