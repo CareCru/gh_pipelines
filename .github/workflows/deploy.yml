@@ -1,0 +1,63 @@
+# Triggers carecru-deployment-configs (or other target) via repository_dispatch.
+# Uses a GitHub App installation token instead of PAT_DEVOPS.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        description: Target environment (dev, test, prod, prod-us)
+        required: true
+        type: string
+      app:
+        description: Application name (ArgoCD manifest basename, e.g. form)
+        required: true
+        type: string
+      tag:
+        description: Version tag to deploy (short SHA or release tag)
+        required: true
+        type: string
+      target_repo:
+        description: CareCru repository the GitHub App token is scoped to
+        required: false
+        type: string
+        default: carecru-deployment-configs
+      repository:
+        description: repository_dispatch target (owner/repo)
+        required: false
+        type: string
+        default: CareCru/carecru-deployment-configs
+      event_type:
+        description: repository_dispatch event-type
+        required: false
+        type: string
+        default: update_application_version
+    secrets:
+      app_id:
+        description: GitHub App ID for repository dispatch
+        required: true
+      app_private_key:
+        description: GitHub App private key
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.app_id }}
+          private-key: ${{ secrets.app_private_key }}
+          owner: CareCru
+          repositories: ${{ inputs.target_repo }}
+
+      - name: Trigger deployment config update
+        uses: peter-evans/repository-dispatch@v4.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repository: ${{ inputs.repository }}
+          event-type: ${{ inputs.event_type }}
+          client-payload: >-
+            {"env": "${{ inputs.env }}", "app": "${{ inputs.app }}", "tag": "${{ inputs.tag }}"}
