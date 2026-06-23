@@ -1,32 +1,37 @@
-# Triggers carecru-deployment-configs to bump release and sync via Helm MFE hook (ArgoCD).
-# v4 breaking change: replaces direct S3 copy; requires GitHub App secrets and app/mfe_service_name inputs.
-name: Deploy MFE
+# Triggers carecru-deployment-configs (or other target) via repository_dispatch.
+# Uses a GitHub App installation token instead of PAT_DEVOPS.
+name: Deploy
 
 on:
   workflow_call:
     inputs:
-      app:
-        description: ArgoCD application name (carecru-deployment-configs manifest basename, e.g. dashboard)
+      env:
+        description: Target environment (dev, test, prod, prod-us)
         required: true
         type: string
-      environment:
-        description: Target environment (dev, test, prod, prod-us)
+      app:
+        description: Application name (ArgoCD manifest basename, e.g. form)
         required: true
         type: string
       tag:
         description: Version tag to deploy (short SHA or release tag)
         required: true
         type: string
-      mfe_service_name:
-        description: S3 artifacts path segment under micro-frontend-artifacts (e.g. dashboard-frontend)
-        required: false
-        type: string
-        default: ""
       target_repo:
         description: CareCru repository the GitHub App token is scoped to
         required: false
         type: string
         default: carecru-deployment-configs
+      repository:
+        description: repository_dispatch target (owner/repo)
+        required: false
+        type: string
+        default: CareCru/carecru-deployment-configs
+      event_type:
+        description: repository_dispatch event-type
+        required: false
+        type: string
+        default: update_application_version
     secrets:
       client_id:
         description: GitHub Client ID for repository dispatch
@@ -48,11 +53,11 @@ jobs:
           owner: CareCru
           repositories: ${{ inputs.target_repo }}
 
-      - name: Trigger carecru-deployment-configs update
+      - name: Trigger deployment config update
         uses: peter-evans/repository-dispatch@v4.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
-          repository: CareCru/carecru-deployment-configs
-          event-type: update_application_version
+          repository: ${{ inputs.repository }}
+          event-type: ${{ inputs.event_type }}
           client-payload: >-
-            {"env": "${{ inputs.environment }}", "app": "${{ inputs.app }}", "tag": "${{ inputs.tag }}", "mfe_service_name": "${{ inputs.mfe_service_name }}"}
+            {"env": "${{ inputs.env }}", "app": "${{ inputs.app }}", "tag": "${{ inputs.tag }}"}
