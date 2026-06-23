@@ -1,5 +1,5 @@
 # Triggers carecru-deployment-configs to bump release and sync via Helm MFE hook (ArgoCD).
-# v4 breaking change: replaces direct S3 copy; requires pat_devops and app/mfe_service_name inputs.
+# v4 breaking change: replaces direct S3 copy; requires GitHub App secrets and app/mfe_service_name inputs.
 name: Deploy MFE
 
 on:
@@ -22,19 +22,36 @@ on:
         required: false
         type: string
         default: ""
+      target_repo:
+        description: CareCru repository the GitHub App token is scoped to
+        required: false
+        type: string
+        default: carecru-deployment-configs
     secrets:
-      pat_devops:
-        description: PAT with repo dispatch access to carecru-deployment-configs
+      app_id:
+        description: GitHub App ID for repository dispatch
+        required: true
+      app_private_key:
+        description: GitHub App private key
         required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v3.2.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.app_id }}
+          private-key: ${{ secrets.app_private_key }}
+          owner: CareCru
+          repositories: ${{ inputs.target_repo }}
+
       - name: Trigger carecru-deployment-configs update
         uses: peter-evans/repository-dispatch@v4.0.1
         with:
-          token: ${{ secrets.pat_devops }}
+          token: ${{ steps.app-token.outputs.token }}
           repository: CareCru/carecru-deployment-configs
           event-type: update_application_version
           client-payload: >-
