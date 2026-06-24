@@ -114,14 +114,21 @@ jobs:
             type=semver,prefix=v,pattern={{version}}
             type=sha,prefix=,suffix=,format=short
 
-      - name: Read Secrets from AWS Secrets Manager
-        uses: say8425/aws-secrets-manager-actions@v2.2.1
+      - uses: actions/setup-node@v4
         with:
-          AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
-          AWS_DEFAULT_REGION: ${{inputs.region}}
-          SECRET_NAME: build/generic/npm_tokens
-          OUTPUT_PATH: '.env'
+          node-version: 24
+
+      - name: Install AWS SDK
+        run: npm install --no-save @aws-sdk/client-secrets-manager
+
+      - name: Populate .env from AWS Secrets Manager
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.aws_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+          AWS_DEFAULT_REGION:    ${{ inputs.region }}
+          SECRET_NAME:           'build/generic/npm_tokens'
+          OUTPUT_PATH:           '.env'
+        run: node scripts/populate-env.mjs
 
       - name: Set Build Arguments
         id: build_arg_var
