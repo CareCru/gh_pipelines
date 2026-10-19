@@ -1,0 +1,84 @@
+# .github/workflows/deploy_app.yml
+# ────────────────────────────────────────────────────────────────────────────────
+# Reusable workflow: resolves target environments and tag (resolve_targets.yml),
+# then deploys each environment through carecru-deployment-configs:
+#   mfe_service_name set   → deploy_mfe.yml (Helm MFE S3 sync hook)
+#   mfe_service_name empty → deploy.yml
+# The caller keeps its own triggers and `env` / `tag` workflow_dispatch inputs.
+# ────────────────────────────────────────────────────────────────────────────────
+
+name: Deploy app
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: ArgoCD application name (carecru-deployment-configs manifest basename, e.g. dashboard)
+        required: true
+        type: string
+      mfe_service_name:
+        description: S3 artifacts path segment for MFEs (e.g. dashboard-frontend). Leave empty for image only apps.
+        required: false
+        type: string
+        default: ""
+      env:
+        description: Environment for workflow_dispatch runs. Defaults to the caller's `env` dispatch input.
+        required: false
+        type: string
+        default: ""
+      tag:
+        description: Tag for workflow_dispatch runs. Defaults to the caller's `tag` dispatch input.
+        required: false
+        type: string
+        default: ""
+      branch:
+        description: Branch whose pushes deploy to dev
+        required: false
+        type: string
+        default: develop
+    secrets:
+      client_id:
+        description: GitHub Client ID for repository dispatch
+        required: true
+      app_private_key:
+        description: GitHub App private key
+        required: true
+
+jobs:
+  resolve:
+    uses: ./.github/workflows/resolve_targets.yml
+    with:
+      env: ${{ inputs.env }}
+      tag: ${{ inputs.tag }}
+      branch: ${{ inputs.branch }}
+
+  deploy:
+    needs: resolve
+    if: needs.resolve.outputs.envs != '[]' && inputs.mfe_service_name == ''
+    strategy:
+      matrix:
+        env: ${{ fromJson(needs.resolve.outputs.envs) }}
+    uses: ./.github/workflows/deploy.yml
+    with:
+      env: ${{ matrix.env }}
+      app: ${{ inputs.app }}
+      tag: ${{ needs.resolve.outputs.tag }}
+    secrets:
+      client_id: ${{ secrets.client_id }}
+      app_private_key: ${{ secrets.app_private_key }}
+
+  deploy_mfe:
+    needs: resolve
+    if: needs.resolve.outputs.envs != '[]' && inputs.mfe_service_name != ''
+    strategy:
+      matrix:
+        env: ${{ fromJson(needs.resolve.outputs.envs) }}
+    uses: ./.github/workflows/deploy_mfe.yml
+    with:
+      app: ${{ inputs.app }}
+      environment: ${{ matrix.env }}
+      tag: ${{ needs.resolve.outputs.tag }}
+      mfe_service_name: ${{ inputs.mfe_service_name }}
+    secrets:
+      client_id: ${{ secrets.client_id }}
+      app_private_key: ${{ secrets.app_private_key }}

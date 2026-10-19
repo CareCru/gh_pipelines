@@ -1,0 +1,90 @@
+# .github/workflows/resolve_targets.yml
+# ────────────────────────────────────────────────────────────────────────────────
+# Reusable workflow: decides which environments to deploy (or build) and with
+# which tag, based on the caller's triggering event:
+#   push to <branch>     → ["dev"],             short commit SHA
+#   prerelease created   → ["test"],            release tag
+#   release created      → ["prod","prod-us"],  release tag (RC tags are blocked)
+#   workflow_dispatch    → [<env input>],       <tag input>
+# Anything else resolves to [] so callers can skip their jobs.
+# Use:  workflow_call  from a pipeline repo, then fan out with
+#   strategy.matrix.env: ${{ fromJson(needs.<job>.outputs.envs) }}
+# ────────────────────────────────────────────────────────────────────────────────
+
+name: Resolve deploy targets
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        description: >-
+          Environment for workflow_dispatch runs (e.g. dev, test, test-2, prod, prod-us).
+          Defaults to the caller's `env` dispatch input.
+        required: false
+        type: string
+        default: ""
+      tag:
+        description: Tag for workflow_dispatch runs. Defaults to the caller's `tag` dispatch input.
+        required: false
+        type: string
+        default: ""
+      branch:
+        description: Branch whose pushes deploy to dev
+        required: false
+        type: string
+        default: develop
+    outputs:
+      envs:
+        description: JSON array of environments, e.g. ["prod","prod-us"]; [] when nothing should run
+        value: ${{ jobs.resolve.outputs.envs }}
+      tag:
+        description: Tag to build/deploy
+        value: ${{ jobs.resolve.outputs.tag }}
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      envs: ${{ steps.set-matrix.outputs.envs }}
+      tag: ${{ steps.set-matrix.outputs.tag }}
+    steps:
+      - name: Resolve target environments and tag
+        id: set-matrix
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BRANCH: ${{ inputs.branch }}
+          SHORT_SHA: ${{ github.sha }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_ENV: ${{ inputs.env || github.event.inputs.env }}
+          INPUT_TAG: ${{ inputs.tag || github.event.inputs.tag }}
+        run: |
+          ENVS='[]'
+          TAG=""
+
+          if [[ "$EVENT_NAME" == "push" && "$REF" == "refs/heads/$BRANCH" ]]; then
+            ENVS='["dev"]'
+            TAG="${SHORT_SHA:0:7}"
+          elif [[ "$EVENT_NAME" == "release" && "$PRERELEASE" == "true" ]]; then
+            ENVS='["test"]'
+            TAG="$RELEASE_TAG"
+          elif [[ "$EVENT_NAME" == "release" ]]; then
+            if echo "$RELEASE_TAG" | grep -iq "rc"; then
+              echo "Tag contains 'rc', 'RC', or 'Rc'. Error: tag CANNOT contain RC for production deployments."
+              exit 1
+            fi
+            ENVS='["prod","prod-us"]'
+            TAG="$RELEASE_TAG"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -z "$INPUT_ENV" || -z "$INPUT_TAG" ]]; then
+              echo "Error: workflow_dispatch needs both an environment and a tag."
+              exit 1
+            fi
+            ENVS=$(jq -cn --arg e "$INPUT_ENV" '[$e]')
+            TAG="$INPUT_TAG"
+          fi
+
+          echo "envs: $ENVS  tag: $TAG"
+          echo "envs=$ENVS" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"

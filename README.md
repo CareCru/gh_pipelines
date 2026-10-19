@@ -53,3 +53,43 @@ secrets:
 ```
 
 Repos still on **v3** `deploy_mfe.yml` keep the old behavior until they upgrade to **@v4**.
+
+### `deploy_app.yml` and `resolve_targets.yml`
+
+`resolve_targets.yml` holds the shared rules for which environments a run targets, and with which tag:
+
+| Caller event | Environments | Tag |
+|---|---|---|
+| push to `develop` (`branch` input) | `dev` | short commit SHA |
+| prerelease created | `test` | release tag |
+| release created | `prod`, `prod-us` (RC tags blocked) | release tag |
+| `workflow_dispatch` | the `env` input (any environment, e.g. `test-2`) | the `tag` input |
+
+It outputs `envs` (a JSON array, `[]` when nothing should run) and `tag`. Repos that build per environment before deploying (e.g. form-service, enterprise-management) can call it directly and fan out with `matrix.env: ${{ fromJson(needs.<job>.outputs.envs) }}`.
+
+`deploy_app.yml` calls `resolve_targets.yml`, then deploys each environment with `deploy_mfe.yml` when `mfe_service_name` is set, or `deploy.yml` otherwise. A caller's whole Deploy workflow becomes:
+
+```yaml
+name: Deploy
+on:
+  push:
+    branches: [develop]
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      env: { description: "Environment to deploy (e.g. dev, test, test-2, prod, prod-us)", required: true }
+      tag: { description: Tag to deploy, required: true }
+
+jobs:
+  deploy:
+    uses: CareCru/gh_pipelines/.github/workflows/deploy_app.yml@v4
+    with:
+      app: dashboard
+      mfe_service_name: dashboard-frontend # omit for image only apps
+    secrets:
+      client_id: ${{ secrets.DEPLOY_CLIENT_ID }}
+      app_private_key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
+```
+
+The dispatch inputs must be named `env` and `tag`, or passed explicitly through the `env` / `tag` inputs.
